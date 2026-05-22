@@ -3,12 +3,32 @@ import "./App.css";
 
 type Game = {
   game_id: string;
+  name: string;
+  short_name: string;
+  date: string;
+
   home_team: string;
-  away_team: string;
+  home_team_abbr: string;
   home_score: number;
+  home_record: string;
+
+  away_team: string;
+  away_team_abbr: string;
   away_score: number;
+  away_record: string;
+
   period: number;
   clock: string;
+  status: string;
+  detail: string;
+
+  venue: string;
+  series: string;
+  broadcast: string;
+
+  spread: string;
+  over_under: number | null;
+
   home_win_probability: number;
 };
 
@@ -60,10 +80,13 @@ function App() {
             <div className="game-header">
               <div>
                 <p className="matchup">
-                  {game.away_team} @ {game.home_team}
+                  {game.away_team_abbr} @ {game.home_team_abbr}
                 </p>
                 <p className="game-status">
-                  Q{game.period} · {game.clock}
+                  {game.detail || game.status}
+                </p>
+                <p className="game-status">
+                  {game.series}
                 </p>
               </div>
 
@@ -83,7 +106,14 @@ function App() {
                 <p className="score">{game.home_score}</p>
               </div>
             </div>
-
+            <div className="game-meta">
+              <p>Venue: {game.venue}</p>
+              <p>Broadcast: {game.broadcast || "TBD"}</p>
+              <p>
+                Odds: {game.spread || "N/A"}
+                {game.over_under !== null ? ` | O/U ${game.over_under}` : ""}
+              </p>
+            </div>
             <div className="probability-section">
               <div className="probability-label">
                 <span>{game.home_team} win probability</span>
