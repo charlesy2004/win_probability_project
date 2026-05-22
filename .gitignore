@@ -62,3 +62,8 @@ tmp/
 credentials.json
 .aws/
 *.pem
+
+.env
+.venv/
+__pycache__/
+backend/data/cache/
