@@ -21,7 +21,7 @@ for event in events:
     formatted_games.append(
         {
             "game_id": event['id'],
-            "name": event['name'],
+            # "name": event['name'],
             "home_team": home_team['team']['displayName'],
             "away_team": away_team['team']['displayName'],
             "home_score": home_team.get('score', 'N/A'),
