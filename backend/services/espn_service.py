@@ -62,3 +62,12 @@ def get_live_games() -> list[dict]:
     events = data.get("events", [])
 
     return [format_game(event) for event in events]
+
+def get_game_by_id(game_id: str) -> dict | None:
+    games = get_live_games()
+
+    for game in games:
+        if game["game_id"] == game_id:
+            return game
+
+    return None
