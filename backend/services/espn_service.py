@@ -72,15 +72,17 @@ def get_game_by_id(game_id: str) -> dict | None:
 
     return None
 
-def get_win_probability_timeline(game_id: str) -> list[dict]:
-    # Placeholder implementation - replace with actual logic to fetch win probability timeline
-    return [
-        {"time": "Q1 12:00", "home_win_probability": 0.50},
-        {"time": "Q1 6:00", "home_win_probability": 0.52},
-        {"time": "Q2 12:00", "home_win_probability": 0.48},
-        {"time": "Q2 6:00", "home_win_probability": 0.55},
-        {"time": "Q3 12:00", "home_win_probability": 0.60},
-        {"time": "Q3 6:00", "home_win_probability": 0.58},
-        {"time": "Q4 12:00", "home_win_probability": 0.65},
-        {"time": "Q4 6:00", "home_win_probability": 0.62},
-    ]
+def get_win_probability_timeline(game_id: str) -> dict:
+    return {
+        "game_id": game_id,
+        "timeline": [
+            {"time": "Q1 12:00", "home_win_probability": 0.50},
+            {"time": "Q1 6:00", "home_win_probability": 0.52},
+            {"time": "Q2 12:00", "home_win_probability": 0.48},
+            {"time": "Q2 6:00", "home_win_probability": 0.55},
+            {"time": "Q3 12:00", "home_win_probability": 0.60},
+            {"time": "Q3 6:00", "home_win_probability": 0.58},
+            {"time": "Q4 12:00", "home_win_probability": 0.65},
+            {"time": "Q4 6:00", "home_win_probability": 0.62},
+        ],
+    }
