@@ -1,6 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from services.espn_service import get_live_games, get_game_by_id
+from services.espn_service import (
+    get_live_games, get_game_by_id, get_win_probability_timeline
+)
 
 app = FastAPI(title="NBA Win Probability API")
 app.add_middleware(
@@ -23,6 +25,11 @@ def health_check():
 def live_games():
     return get_live_games()
 
+@app.get("/games/{game_id}/win-probability")
+def win_probability_timeline(game_id: str):
+    return get_win_probability_timeline(game_id)
+
+
 @app.get("/games/{game_id}")
 def game_detail(game_id: str):
     game = get_game_by_id(game_id)
@@ -31,3 +38,5 @@ def game_detail(game_id: str):
         raise HTTPException(status_code=404, detail="Game not found")
 
     return game
+
+
