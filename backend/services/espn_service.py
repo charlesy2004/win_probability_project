@@ -1,5 +1,5 @@
 import requests
-
+from services.prediction_service import calculate_home_win_probability
 
 ESPN_SCOREBOARD_URL = (
     "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
@@ -23,6 +23,11 @@ def format_game(event: dict) -> dict:
 
     odds_list = competition.get("odds", [])
     first_odds = odds_list[0] if odds_list else {}
+
+    home_score = int(home.get("score", 0))
+    away_score = int(away.get("score", 0))
+    period = event["status"].get("period", 0)
+    clock = event["status"].get("displayClock", "")
 
     return {
         "game_id": event.get("id"),
@@ -53,7 +58,12 @@ def format_game(event: dict) -> dict:
         "over_under": first_odds.get("overUnder", None),
 
         # Placeholder until actual model exists
-        "home_win_probability": 0.50,
+        "home_win_probability": calculate_home_win_probability(
+            home_score=home_score,
+            away_score=away_score,
+            period=period,
+            clock=clock
+        )
     }
 
 
