@@ -1,33 +1,4 @@
-type Game = {
-  game_id: string;
-  name: string;
-  short_name: string;
-  date: string;
-
-  home_team: string;
-  home_team_abbr: string;
-  home_score: number;
-  home_record: string;
-
-  away_team: string;
-  away_team_abbr: string;
-  away_score: number;
-  away_record: string;
-
-  period: number;
-  clock: string;
-  status: string;
-  detail: string;
-
-  venue: string;
-  series: string;
-  broadcast: string;
-
-  spread: string;
-  over_under: number | null;
-
-  home_win_probability: number;
-};
+import type { Game } from "../types/game";
 
 type GameCardProps = {
   game: Game;
@@ -35,7 +6,7 @@ type GameCardProps = {
 
 function GameCard({ game }: GameCardProps) {
   return (
-    <article className="game-card" key={game.game_id}>
+    <article className="game-card">
             <div className="game-header">
               <div>
                 <p className="matchup">

@@ -146,3 +146,19 @@ h1 {
 .game-meta p {
   margin: 4px 0;
 }
+
+.chart-card {
+  margin: 40px auto 0;
+  max-width: 1000px;
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.25);
+}
+
+.chart-card h2 {
+  margin: 0 0 24px;
+  color: #f8fafc;
+  text-align: center;
+}

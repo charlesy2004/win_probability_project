@@ -1,59 +1,42 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 import GameCard from "./components/GameCard";
-
-type Game = {
-  game_id: string;
-  name: string;
-  short_name: string;
-  date: string;
-
-  home_team: string;
-  home_team_abbr: string;
-  home_score: number;
-  home_record: string;
-
-  away_team: string;
-  away_team_abbr: string;
-  away_score: number;
-  away_record: string;
-
-  period: number;
-  clock: string;
-  status: string;
-  detail: string;
-
-  venue: string;
-  series: string;
-  broadcast: string;
-
-  spread: string;
-  over_under: number | null;
-
-  home_win_probability: number;
-};
+import WinProbabilityChart from "./components/WinProbabilityChart";
+import type { Game, TimelinePoint } from "./types/game";
+import { fetchLiveGames, fetchWinProbabilityTimeline } from "./api/clients";
 
 function App() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [timeline, setTimeline] = useState<TimelinePoint[]>([]);
 
   useEffect(() => {
-    fetch("https://humble-pancake-jjv7j7rq76j735v56-8000.app.github.dev/games/live")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to fetch games");
+    async function loadDashboardData() {
+      try {
+        const gamesData = await fetchLiveGames();
+        setGames(gamesData);
+
+        if (gamesData.length > 0) {
+          const timelineData = await fetchWinProbabilityTimeline(
+            gamesData[0].game_id
+          );
+          setTimeline(timelineData);
         }
-        return response.json();
-      })
-      .then((data) => {
-        setGames(data);
+
         setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
+      } catch (err) {
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Something went wrong");
+        }
+
         setLoading(false);
-      });
+      }
+    }
+
+    loadDashboardData();
   }, []);
 
   if (loading) {
@@ -80,6 +63,8 @@ function App() {
           <GameCard key={game.game_id} game={game} />
         ))}
       </section>
+
+      {timeline.length > 0 && <WinProbabilityChart timeline={timeline} />}
     </main>
   );
 }
