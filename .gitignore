@@ -38,3 +38,6 @@ Thumbs.db
 backend/*.json
 backend/data/
 data/
+
+.env
+backend/.env
