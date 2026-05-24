@@ -3,7 +3,7 @@ import "./App.css";
 import GameCard from "./components/GameCard";
 import WinProbabilityChart from "./components/WinProbabilityChart";
 import type { Game, TimelinePoint } from "./types/game";
-import { fetchLiveGames, fetchWinProbabilityTimeline } from "./api/clients";
+import { fetchLiveGames, fetchWinProbabilityTimeline, saveScoreboardSnapshots } from "./api/clients";
 
 function App() {
   const [games, setGames] = useState<Game[]>([]);
@@ -38,7 +38,22 @@ function App() {
 
     loadDashboardData();
   }, []);
+  async function handleSaveSnapshot() {
+  try {
+    await saveScoreboardSnapshots();
 
+    if (games.length > 0) {
+      const timelineData = await fetchWinProbabilityTimeline(games[0].game_id);
+      setTimeline(timelineData);
+    }
+  } catch (err) {
+    if (err instanceof Error) {
+      setError(err.message);
+    } else {
+      setError("Something went wrong");
+    }
+  }
+}
   if (loading) {
     return <h1>Loading games...</h1>;
   }
@@ -56,6 +71,9 @@ function App() {
         <p className="subtitle">
           Live game state, score, and model-estimated home team win probability.
         </p>
+        <button className="save-button" onClick={handleSaveSnapshot}>
+          Save Snapshot
+        </button>
       </section>
 
       <section className="games-grid">

@@ -18,3 +18,18 @@ export async function fetchWinProbabilityTimeline(gameId: string): Promise<Timel
     const data = await response.json();
     return data.timeline ?? data; // Handle both { timeline: [...] } and direct array responses
 }
+
+export async function saveScoreboardSnapshots(): Promise<{
+  message: string;
+  count: number;
+}> {
+  const response = await fetch(`${API_BASE_URL}/games/snapshots`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to save scoreboard snapshots");
+  }
+
+  return response.json();
+}
