@@ -5,8 +5,39 @@ from services.espn_service import (
 )
 from db.session import session_local
 from services.snapshot_service import save_scoreboard_snapshots, get_snapshots_for_game
+import asyncio
+from contextlib import asynccontextmanager
 
-app = FastAPI(title="NBA Win Probability API")
+SNAPSHOT_CAPTURE_INTERVAL_SECONDS = 60
+def capture_scoreboard_snapshot_once() -> int:
+    games = get_live_games()
+
+    db = session_local()
+
+    try:
+        count = save_scoreboard_snapshots(db, games)
+        print(f"Captured {count} scoreboard snapshots")
+        return count
+    finally:
+        db.close()
+    
+async def capture_snapshot_loop():
+    while True:
+        try:
+            await asyncio.to_thread(capture_scoreboard_snapshot_once)
+        except Exception as e:
+            print(f"Error capturing scoreboard snapshot: {e}")
+        await asyncio.sleep(SNAPSHOT_CAPTURE_INTERVAL_SECONDS)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(capture_snapshot_loop())
+    try:
+        yield
+    except asyncio.CancelledError:
+        pass
+    
+app = FastAPI(title="NBA Win Probability API", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -56,40 +87,10 @@ def game_detail(game_id: str):
 
 @app.post("/games/snapshots")
 def create_scoreboard_snapshots():
-    games = get_live_games()
+    count = capture_scoreboard_snapshot_once()
+    return {
+        "message": "Scoreboard snapshots saved",
+        "count": count,
+    }
 
-    db = session_local()
 
-    try:
-        count = save_scoreboard_snapshots(db, games)
-        return {
-            "message": "Scoreboard snapshots saved",
-            "count": count,
-        }
-    finally:
-        db.close()
-
-@app.get("/debug/snapshots")
-def debug_snapshots():
-    db = session_local()
-
-    try:
-        from db.models import ScoreboardSnapshot
-
-        rows = db.query(ScoreboardSnapshot).all()
-
-        return [
-            {
-                "id": row.id,
-                "game_id": row.game_id,
-                "home_team": row.home_team,
-                "away_team": row.away_team,
-                "home_score": row.home_score,
-                "away_score": row.away_score,
-                "home_win_probability": row.home_win_probability,
-                "created_at": row.created_at.isoformat(),
-            }
-            for row in rows
-        ]
-    finally:
-        db.close()
