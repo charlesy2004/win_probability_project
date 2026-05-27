@@ -1,9 +1,17 @@
 from sqlalchemy.orm import Session
-
 from db.models import ScoreboardSnapshot
-
+from zoneinfo import ZoneInfo
+from services.prediction_service import calculate_seconds_remaining, calculate_game_progress
 
 def save_scoreboard_snapshot(db: Session, game: dict) -> ScoreboardSnapshot | None:
+    home_score = game["home_score"]
+    away_score = game["away_score"]
+    period = game.get("period")
+    clock = game.get("clock")
+
+    score_diff = home_score - away_score
+    seconds_remaining = calculate_seconds_remaining(period, clock)
+    game_progress = calculate_game_progress(period, clock)
     latest_snapshot = (
         db.query(ScoreboardSnapshot)
         .filter(ScoreboardSnapshot.game_id == game["game_id"])
@@ -36,6 +44,9 @@ def save_scoreboard_snapshot(db: Session, game: dict) -> ScoreboardSnapshot | No
 
         home_score=game["home_score"],
         away_score=game["away_score"],
+        score_diff=score_diff,
+        seconds_remaining=seconds_remaining,
+        game_progress=game_progress,
 
         period=game.get("period"),
         clock=game.get("clock"),
@@ -64,6 +75,8 @@ def save_scoreboard_snapshots(db: Session, games: list[dict]) -> int:
 
 
 def get_snapshots_for_game(db: Session, game_id: str) -> list[dict]:
+    eastern = ZoneInfo("America/New_York")
+
     snapshots = (
         db.query(ScoreboardSnapshot)
         .filter(ScoreboardSnapshot.game_id == game_id)
@@ -73,7 +86,7 @@ def get_snapshots_for_game(db: Session, game_id: str) -> list[dict]:
 
     return [
         {
-            "time": snapshot.created_at.isoformat(),
+            "time": snapshot.created_at.astimezone(eastern).strftime("%I:%M:%S %p"),
             "home_win_probability": snapshot.home_win_probability,
             "home_score": snapshot.home_score,
             "away_score": snapshot.away_score,

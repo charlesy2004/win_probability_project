@@ -71,3 +71,23 @@ def calculate_home_win_probability(
     probability = sigmoid(raw_score)
 
     return round(probability, 3)
+    
+
+def calculate_seconds_remaining(period: int, clock: str) -> int:
+    if period == 0:
+        return 48 * 60
+
+    seconds_left_in_period = parse_clock_to_seconds(clock)
+
+    periods_remaining_after_current = max(4 - period, 0)
+
+    return seconds_left_in_period + periods_remaining_after_current * 12 * 60
+
+
+def calculate_game_progress(period: int, clock: str) -> float:
+    total_game_seconds = 48 * 60
+    seconds_remaining = calculate_seconds_remaining(period, clock)
+
+    progress = 1 - (seconds_remaining / total_game_seconds)
+
+    return round(min(max(progress, 0), 1), 3)

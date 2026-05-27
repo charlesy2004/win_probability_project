@@ -22,7 +22,9 @@ class ScoreboardSnapshot(Base):
 
     home_score = Column(Integer, nullable=False)
     away_score = Column(Integer, nullable=False)
-
+    score_diff = Column(Integer, nullable=True)
+    seconds_remaining = Column(Integer, nullable=True)
+    game_progress = Column(Float, nullable=True)
     period = Column(Integer, nullable=True)
     clock = Column(String, nullable=True)
     status = Column(String, nullable=True)

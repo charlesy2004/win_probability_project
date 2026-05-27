@@ -31,6 +31,19 @@ function WinProbabilityChart({ timeline }: WinProbabilityChartProps) {
           <XAxis dataKey="time" />
           <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
           <Tooltip
+            contentStyle={{
+              backgroundColor: "#111827",
+              border: "1px solid #374151",
+              borderRadius: "12px",
+              color: "#ffffff",
+            }}
+            labelStyle={{
+              color: "#ffffff",
+              fontWeight: 700,
+            }}
+            itemStyle={{
+              color: "#ffffff",
+            }}
             formatter={(value) => [
               `${Number(value).toFixed(1)}%`,
               "Home Win Probability",
