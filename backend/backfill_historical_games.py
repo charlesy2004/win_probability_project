@@ -1,8 +1,18 @@
+"""
+Run this locally, not in Codespaces.
+
+Codespaces/NBA.com may return 403 for nba_api.
+This script uses nba_api locally to fetch historical NBA play-by-play,
+convert it into game-state training rows, and upload those rows to Supabase.
+
+It inserts rows into the historical_game_states table.
+"""
+
+import re
 import time
-from typing import Optional
 
 import pandas as pd
-from nba_api.stats.endpoints import leaguegamefinder, playbyplayv2
+from nba_api.stats.endpoints import leaguegamefinder, playbyplayv3
 
 from db.session import session_local
 from services.historical_data_service import create_historical_game_state
@@ -10,31 +20,65 @@ from services.historical_data_service import create_historical_game_state
 
 SEASON = "2023-24"
 SEASON_TYPE = "Regular Season"
-MAX_GAMES = 10
+MAX_GAMES = 5
 REQUEST_SLEEP_SECONDS = 1.0
 
 
-def parse_score(score_text: Optional[str]) -> tuple[Optional[int], Optional[int]]:
+def safe_int(value):
     """
-    NBA play-by-play SCORE usually looks like:
-    '24 - 21'
-    Sometimes it is blank/None for non-scoring events.
+    Safely convert score values to int.
+
+    PlayByPlayV3 sometimes gives:
+    - empty string ""
+    - None
+    - NaN
+
+    Those should be skipped.
     """
-    if not score_text or not isinstance(score_text, str):
-        return None, None
+    if value is None:
+        return None
 
-    parts = score_text.split(" - ")
+    if pd.isna(value):
+        return None
 
-    if len(parts) != 2:
-        return None, None
+    if value == "":
+        return None
 
     try:
-        return int(parts[0]), int(parts[1])
+        return int(value)
     except ValueError:
-        return None, None
+        return None
+
+
+def nba_clock_to_mmss(clock: str) -> str:
+    """
+    Convert NBA API V3 clock format like:
+        PT11M38.00S
+
+    into:
+        11:38
+    """
+    if not isinstance(clock, str):
+        return "0:00"
+
+    match = re.match(r"PT(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?", clock)
+
+    if not match:
+        return "0:00"
+
+    minutes = int(match.group(1) or 0)
+    seconds = int(float(match.group(2) or 0))
+
+    return f"{minutes}:{seconds:02d}"
 
 
 def get_completed_game_ids(season: str, max_games: int) -> list[str]:
+    """
+    Gets completed game IDs for a season.
+
+    LeagueGameFinder returns one row per team per game,
+    so GAME_ID appears twice. We drop duplicates.
+    """
     finder = leaguegamefinder.LeagueGameFinder(
         season_nullable=season,
         season_type_nullable=SEASON_TYPE,
@@ -42,40 +86,55 @@ def get_completed_game_ids(season: str, max_games: int) -> list[str]:
 
     games_df = finder.get_data_frames()[0]
 
-    # LeagueGameFinder returns one row per team per game, so GAME_ID repeats.
     game_ids = games_df["GAME_ID"].drop_duplicates().head(max_games).tolist()
 
     return game_ids
 
 
+def get_valid_score_rows(pbp_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Keep only rows where both home and away scores are valid numbers.
+    """
+    score_rows = pbp_df.copy()
+
+    score_rows["scoreHomeParsed"] = score_rows["scoreHome"].apply(safe_int)
+    score_rows["scoreAwayParsed"] = score_rows["scoreAway"].apply(safe_int)
+
+    score_rows = score_rows[
+        score_rows["scoreHomeParsed"].notna()
+        & score_rows["scoreAwayParsed"].notna()
+    ].copy()
+
+    return score_rows
+
+
 def get_final_score_from_pbp(pbp_df: pd.DataFrame) -> tuple[int, int]:
-    scoring_rows = pbp_df[pbp_df["SCORE"].notna()].copy()
-
-    if scoring_rows.empty:
-        raise ValueError("No scoring rows found.")
-
-    final_score_text = scoring_rows.iloc[-1]["SCORE"]
-    score_a, score_b = parse_score(final_score_text)
-
-    if score_a is None or score_b is None:
-        raise ValueError(f"Could not parse final score: {final_score_text}")
-
-    return score_a, score_b
-
-
-def infer_home_away_names(pbp_df: pd.DataFrame) -> tuple[str, str]:
     """
-    Simple starter version.
-
-    NBA play-by-play has HOMEDESCRIPTION and VISITORDESCRIPTION columns,
-    but not always clean team names. For now, use placeholders.
-    Later we can join a boxscore endpoint to get exact home/away teams.
+    Final score is the last valid score row in play-by-play.
     """
-    return "Home Team", "Away Team"
+    valid_score_rows = get_valid_score_rows(pbp_df)
+
+    if valid_score_rows.empty:
+        raise ValueError("No valid scoring rows found.")
+
+    final_row = valid_score_rows.iloc[-1]
+
+    final_home_score = int(final_row["scoreHomeParsed"])
+    final_away_score = int(final_row["scoreAwayParsed"])
+
+    return final_home_score, final_away_score
 
 
 def backfill_game(db, game_id: str) -> int:
-    pbp = playbyplayv2.PlayByPlayV2(game_id=game_id)
+    """
+    Fetch one game's play-by-play and insert one training row per unique score state.
+    """
+    pbp = playbyplayv3.PlayByPlayV3(
+        game_id=game_id,
+        start_period=1,
+        end_period=10,
+    )
+
     pbp_df = pbp.get_data_frames()[0]
 
     if pbp_df.empty:
@@ -83,35 +142,37 @@ def backfill_game(db, game_id: str) -> int:
         return 0
 
     final_home_score, final_away_score = get_final_score_from_pbp(pbp_df)
-    home_team, away_team = infer_home_away_names(pbp_df)
+
+    scoring_rows = get_valid_score_rows(pbp_df)
 
     inserted = 0
-
-    current_home_score = 0
-    current_away_score = 0
-
-    # Use scoring events only for first version.
-    scoring_rows = pbp_df[pbp_df["SCORE"].notna()].copy()
+    previous_home_score = None
+    previous_away_score = None
 
     for _, row in scoring_rows.iterrows():
-        period = int(row["PERIOD"])
-        clock = row["PCTIMESTRING"]
+        home_score = int(row["scoreHomeParsed"])
+        away_score = int(row["scoreAwayParsed"])
 
-        parsed_home_score, parsed_away_score = parse_score(row["SCORE"])
-
-        if parsed_home_score is None or parsed_away_score is None:
+        # Skip duplicate score states.
+        if (
+            previous_home_score == home_score
+            and previous_away_score == away_score
+        ):
             continue
 
-        current_home_score = parsed_home_score
-        current_away_score = parsed_away_score
+        previous_home_score = home_score
+        previous_away_score = away_score
+
+        period = int(row["period"])
+        clock = nba_clock_to_mmss(row["clock"])
 
         create_historical_game_state(
             db=db,
             game_id=game_id,
-            home_team=home_team,
-            away_team=away_team,
-            home_score=current_home_score,
-            away_score=current_away_score,
+            home_team="Home Team",
+            away_team="Away Team",
+            home_score=home_score,
+            away_score=away_score,
             period=period,
             clock=clock,
             final_home_score=final_home_score,
@@ -130,6 +191,7 @@ def main():
         game_ids = get_completed_game_ids(SEASON, MAX_GAMES)
 
         print(f"Found {len(game_ids)} games.")
+
         total_inserted = 0
 
         for game_id in game_ids:
