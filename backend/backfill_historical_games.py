@@ -20,7 +20,7 @@ from services.historical_data_service import create_historical_game_state
 
 SEASON = "2023-24"
 SEASON_TYPE = "Regular Season"
-MAX_GAMES = 5
+MAX_GAMES = 50
 REQUEST_SLEEP_SECONDS = 1.0
 
 
@@ -166,7 +166,7 @@ def backfill_game(db, game_id: str) -> int:
         period = int(row["period"])
         clock = nba_clock_to_mmss(row["clock"])
 
-        create_historical_game_state(
+        row_created = create_historical_game_state(
             db=db,
             game_id=game_id,
             home_team="Home Team",
@@ -179,7 +179,9 @@ def backfill_game(db, game_id: str) -> int:
             final_away_score=final_away_score,
         )
 
-        inserted += 1
+        if row_created is not None:
+            inserted += 1
+
 
     return inserted
 

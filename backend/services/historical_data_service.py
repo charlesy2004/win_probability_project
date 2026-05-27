@@ -19,7 +19,20 @@ def create_historical_game_state(
     clock: str,
     final_home_score: int,
     final_away_score: int,
-) -> HistoricalGameState:
+) -> HistoricalGameState | None:
+    existing_row = (
+        db.query(HistoricalGameState)
+        .filter(HistoricalGameState.game_id == game_id)
+        .filter(HistoricalGameState.period == period)
+        .filter(HistoricalGameState.clock == clock)
+        .filter(HistoricalGameState.home_score == home_score)
+        .filter(HistoricalGameState.away_score == away_score)
+        .first()
+    )
+
+    if existing_row:
+        return None
+
     score_diff = home_score - away_score
     seconds_remaining = calculate_seconds_remaining(period, clock)
     game_progress = calculate_game_progress(period, clock)
