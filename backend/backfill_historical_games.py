@@ -187,31 +187,33 @@ def backfill_game(db, game_id: str) -> int:
 
 
 def main():
-    db = session_local()
+    game_ids = get_completed_game_ids(SEASON, MAX_GAMES)
 
-    try:
-        game_ids = get_completed_game_ids(SEASON, MAX_GAMES)
+    print(f"Found {len(game_ids)} games.")
 
-        print(f"Found {len(game_ids)} games.")
+    total_inserted = 0
 
-        total_inserted = 0
+    for game_id in game_ids:
+        print(f"Backfilling game {game_id}...")
 
-        for game_id in game_ids:
-            print(f"Backfilling game {game_id}...")
+        db = session_local()
 
-            try:
-                inserted = backfill_game(db, game_id)
-                total_inserted += inserted
-                print(f"Inserted {inserted} rows for {game_id}.")
-            except Exception as e:
-                print(f"Failed on {game_id}: {e}")
+        try:
+            inserted = backfill_game(db, game_id)
+            total_inserted += inserted
+            print(f"Inserted {inserted} rows for {game_id}.")
+            print(f"Total inserted so far: {total_inserted}")
 
-            time.sleep(REQUEST_SLEEP_SECONDS)
+        except Exception as e:
+            db.rollback()
+            print(f"Failed on {game_id}: {e}")
 
-        print(f"Done. Inserted {total_inserted} historical game-state rows.")
+        finally:
+            db.close()
 
-    finally:
-        db.close()
+        time.sleep(REQUEST_SLEEP_SECONDS)
+
+    print(f"Done. Inserted {total_inserted} historical game-state rows.")
 
 
 if __name__ == "__main__":
