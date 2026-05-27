@@ -5,6 +5,7 @@ from services.espn_service import (
 )
 from db.session import session_local
 from services.snapshot_service import save_scoreboard_snapshots, get_snapshots_for_game
+from services.historical_data_service import create_historical_game_state
 import asyncio
 from contextlib import asynccontextmanager
 
@@ -93,4 +94,32 @@ def create_scoreboard_snapshots():
         "count": count,
     }
 
+@app.post("/debug/historical-sample")
+def create_historical_sample():
+    db = session_local()
 
+    try:
+        row = create_historical_game_state(
+            db=db,
+            game_id="sample_001",
+            home_team="Boston Celtics",
+            away_team="New York Knicks",
+            home_score=82,
+            away_score=77,
+            period=3,
+            clock="06:00",
+            final_home_score=112,
+            final_away_score=105,
+        )
+
+        return {
+            "id": row.id,
+            "game_id": row.game_id,
+            "score_diff": row.score_diff,
+            "seconds_remaining": row.seconds_remaining,
+            "game_progress": row.game_progress,
+            "home_win_probability_baseline": row.home_win_probability_baseline,
+            "home_team_won": row.home_team_won,
+        }
+    finally:
+        db.close()
