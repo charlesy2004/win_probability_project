@@ -64,7 +64,4 @@ def create_historical_game_state(
     )
 
     db.add(row)
-    db.commit()
-    db.refresh(row)
-
     return row

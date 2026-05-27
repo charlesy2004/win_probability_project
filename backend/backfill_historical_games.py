@@ -181,8 +181,8 @@ def backfill_game(db, game_id: str) -> int:
 
         if row_created is not None:
             inserted += 1
-
-
+    
+    db.commit()
     return inserted
 
 
