@@ -20,7 +20,7 @@ from services.historical_data_service import create_historical_game_state
 
 SEASON = "2023-24"
 SEASON_TYPE = "Regular Season"
-MAX_GAMES = 50
+MAX_GAMES = 1230
 REQUEST_SLEEP_SECONDS = 1.0
 
 
