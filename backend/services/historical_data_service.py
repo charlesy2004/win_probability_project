@@ -65,3 +65,4 @@ def create_historical_game_state(
 
     db.add(row)
     return row
+
