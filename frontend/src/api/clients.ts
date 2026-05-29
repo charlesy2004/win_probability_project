@@ -1,6 +1,6 @@
 import type { Game, TimelinePoint, LivePlay, GameStateDashboard } from "../types/game";
 
-const API_BASE_URL = "https://humble-pancake-jjv7j7rq76j735v56-8000.app.github.dev";
+const API_BASE_URL = "https://win-probability-project-1.onrender.com/";
 
 export async function fetchLiveGames(): Promise<Game[]> {
   const response = await fetch(`${API_BASE_URL}/games/live`);
