@@ -41,5 +41,6 @@ data/
 
 .env
 backend/.env
+frontend/.env
 
 backend/models
