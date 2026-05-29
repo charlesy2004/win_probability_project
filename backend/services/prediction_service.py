@@ -77,22 +77,112 @@ def calculate_home_win_probability_baseline(
     return round(probability, 3)
     
 
+def get_period_length_seconds(period: int) -> int:
+    """
+    NBA regulation periods are 12 minutes.
+    Overtime periods are 5 minutes.
+    """
+    if period <= 4:
+        return 12 * 60
+
+    return 5 * 60
+
+
+def calculate_total_game_seconds_through_period(period: int) -> int:
+    """
+    Total scheduled seconds through the end of the current period.
+
+    Q1-Q4:
+        period 1 end = 720
+        period 2 end = 1440
+        period 3 end = 2160
+        period 4 end = 2880
+
+    OT:
+        period 5 end = 3180
+        period 6 end = 3480
+        etc.
+    """
+    if period <= 4:
+        return period * 12 * 60
+
+    regulation_seconds = 4 * 12 * 60
+    overtime_periods_through_current = period - 4
+
+    return regulation_seconds + overtime_periods_through_current * 5 * 60
+
+
+def calculate_elapsed_seconds(period: int, clock: str) -> int:
+    """
+    Calculate elapsed game seconds from period and clock.
+
+    Example:
+    Q3 6:00:
+        elapsed before Q3 = 24 minutes
+        elapsed in Q3 = 6 minutes
+        total elapsed = 30 minutes = 1800 seconds
+
+    OT 3:00:
+        elapsed before OT = 48 minutes
+        elapsed in OT = 2 minutes
+        total elapsed = 50 minutes = 3000 seconds
+    """
+    if period == 0:
+        return 0
+
+    seconds_left_in_period = parse_clock_to_seconds(clock)
+    period_length = get_period_length_seconds(period)
+
+    elapsed_in_current_period = period_length - seconds_left_in_period
+    elapsed_in_current_period = max(elapsed_in_current_period, 0)
+
+    if period <= 4:
+        elapsed_before_period = (period - 1) * 12 * 60
+    else:
+        regulation_seconds = 4 * 12 * 60
+        completed_overtime_periods = period - 5
+        elapsed_before_period = regulation_seconds + completed_overtime_periods * 5 * 60
+
+    return elapsed_before_period + elapsed_in_current_period
+
+
 def calculate_seconds_remaining(period: int, clock: str) -> int:
+    """
+    Calculate seconds remaining in the scheduled game length.
+
+    In regulation:
+        Q1-Q4 assume 48 minutes total.
+
+    In overtime:
+        Each overtime period adds 5 minutes to total possible game length.
+        For period 5, total game length is 53 minutes.
+        For period 6, total game length is 58 minutes.
+    """
     if period == 0:
         return 48 * 60
 
-    seconds_left_in_period = parse_clock_to_seconds(clock)
+    elapsed_seconds = calculate_elapsed_seconds(period, clock)
+    total_seconds_through_current_period = calculate_total_game_seconds_through_period(period)
 
-    periods_remaining_after_current = max(4 - period, 0)
+    seconds_remaining = total_seconds_through_current_period - elapsed_seconds
 
-    return seconds_left_in_period + periods_remaining_after_current * 12 * 60
+    return max(seconds_remaining, 0)
 
 
 def calculate_game_progress(period: int, clock: str) -> float:
-    total_game_seconds = 48 * 60
-    seconds_remaining = calculate_seconds_remaining(period, clock)
+    """
+    Game progress between 0 and 1.
 
-    progress = 1 - (seconds_remaining / total_game_seconds)
+    Regulation is based on 48 minutes.
+    Overtime extends the denominator to include the current OT period.
+    """
+    if period == 0:
+        return 0.0
+
+    elapsed_seconds = calculate_elapsed_seconds(period, clock)
+    total_seconds_through_current_period = calculate_total_game_seconds_through_period(period)
+
+    progress = elapsed_seconds / total_seconds_through_current_period
 
     return round(min(max(progress, 0), 1), 3)
 
