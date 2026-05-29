@@ -33,3 +33,34 @@ export type TimelinePoint = {
   time: string;
   home_win_probability: number;
 };
+
+export type LivePlay = {
+  id: string | null;
+  period: number | null;
+  clock: string | null;
+  text: string | null;
+  type: string | null;
+  team: string | null;
+  home_score: number | null;
+  away_score: number | null;
+  home_win_probability: number | null;
+};
+
+export type GameStateDashboard = {
+  game_id: string;
+  home_team: string;
+  away_team: string;
+  home_team_abbr: string;
+  away_team_abbr: string;
+  home_score: number;
+  away_score: number;
+  score_diff: number;
+  period: number | null;
+  clock: string | null;
+  possession_team: string | null;
+  home_win_probability: number;
+  home_fouls: number | null;
+  away_fouls: number | null;
+  home_in_bonus: boolean;
+  away_in_bonus: boolean;
+};

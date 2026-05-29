@@ -1,7 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from services.espn_service import (
-    get_live_games, get_game_by_id, get_win_probability_timeline
+    get_live_games, 
+    get_game_by_id, 
+    get_win_probability_timeline, 
+    get_game_plays, 
+    get_game_state_dashboard
 )
 from db.session import session_local
 from services.snapshot_service import save_scoreboard_snapshots, get_snapshots_for_game
@@ -77,6 +81,24 @@ def win_probability_timeline(game_id: str):
 
     return get_win_probability_timeline(game_id)
 
+@app.get("/games/{game_id}/plays")
+def game_plays(game_id: str):
+    plays = get_game_plays(game_id)
+    return {
+        "game_id": game_id,
+        "count": len(plays),
+        "plays": plays,
+    }
+
+@app.get("/games/{game_id}/state")
+def game_state_dashboard(game_id: str):
+    state = get_game_state_dashboard(game_id)
+
+    if not state:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    return state
+
 @app.get("/games/{game_id}")
 def game_detail(game_id: str):
     game = get_game_by_id(game_id)
@@ -123,3 +145,8 @@ def create_historical_sample():
         }
     finally:
         db.close()
+
+
+
+
+
