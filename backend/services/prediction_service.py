@@ -1,4 +1,8 @@
 import math
+import os
+import joblib
+import pandas as pd
+
 
 def sigmoid(x: float) -> float:
     """Convert a raw model score into a probability between 0 and 1."""
@@ -24,7 +28,7 @@ def parse_clock_to_seconds(clock: str) -> int:
     return int(minutes) * 60 + int(float(seconds))
 
 
-def calculate_home_win_probability(
+def calculate_home_win_probability_baseline(
     home_score: int,
     away_score: int,
     period: int,
@@ -91,3 +95,65 @@ def calculate_game_progress(period: int, clock: str) -> float:
     progress = 1 - (seconds_remaining / total_game_seconds)
 
     return round(min(max(progress, 0), 1), 3)
+
+
+MODEL_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)),
+    "models",
+    "win_probability_model.pkl",
+)
+
+_model_bundle = None
+
+
+def load_win_probability_model():
+    global _model_bundle
+
+    if _model_bundle is None:
+        _model_bundle = joblib.load(MODEL_PATH)
+
+    return _model_bundle
+
+def calculate_home_win_probability(
+    home_score: int,
+    away_score: int,
+    period: int,
+    clock: str,
+) -> float:
+    try:
+        bundle = load_win_probability_model()
+        model = bundle["model"]
+        feature_columns = bundle["feature_columns"]
+
+        score_diff = home_score - away_score
+        seconds_remaining = calculate_seconds_remaining(period, clock)
+        game_progress = calculate_game_progress(period, clock)
+
+        features = pd.DataFrame(
+            [
+                {
+                    "score_diff": score_diff,
+                    "seconds_remaining": seconds_remaining,
+                    "game_progress": game_progress,
+                    "period": period,
+                    "home_score": home_score,
+                    "away_score": away_score,
+                }
+            ]
+        )
+
+        features = features[feature_columns]
+
+        probability = model.predict_proba(features)[0][1]
+
+        return round(float(probability), 3)
+
+    except Exception as e:
+        print(f"Model prediction failed. Using baseline fallback: {e}")
+
+        return calculate_home_win_probability_baseline(
+            home_score=home_score,
+            away_score=away_score,
+            period=period,
+            clock=clock,
+        )
