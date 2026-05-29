@@ -147,6 +147,96 @@ def create_historical_sample():
         db.close()
 
 
+@app.get("/games/demo")
+def get_demo_games():
+    return [
+        {
+            "game_id": "demo-001",
+            "home_team": "BOS",
+            "away_team": "NYK",
+            "home_score": 104,
+            "away_score": 98,
+            "period": 4,
+            "clock": "02:14",
+            "status": "Demo",
+            "home_win_probability": 0.78,
+            "away_win_probability": 0.22,
+        }
+    ]
 
 
+@app.get("/games/demo-001/win-probability")
+def get_demo_win_probability():
+    return {
+        "timeline": [
+            {"time": "12:00 Q1", "home_win_probability": 0.52, "away_win_probability": 0.48},
+            {"time": "06:00 Q1", "home_win_probability": 0.57, "away_win_probability": 0.43},
+            {"time": "12:00 Q2", "home_win_probability": 0.49, "away_win_probability": 0.51},
+            {"time": "06:00 Q2", "home_win_probability": 0.61, "away_win_probability": 0.39},
+            {"time": "12:00 Q3", "home_win_probability": 0.66, "away_win_probability": 0.34},
+            {"time": "06:00 Q3", "home_win_probability": 0.71, "away_win_probability": 0.29},
+            {"time": "12:00 Q4", "home_win_probability": 0.74, "away_win_probability": 0.26},
+            {"time": "02:14 Q4", "home_win_probability": 0.78, "away_win_probability": 0.22},
+        ]
+    }
 
+
+@app.get("/games/demo-001/plays")
+def get_demo_plays():
+    return {
+        "plays": [
+            {
+                "period": 4,
+                "clock": "03:42",
+                "description": "NYK makes 3-pt jump shot",
+                "home_score": 101,
+                "away_score": 96,
+                "home_win_probability": 0.69,
+            },
+            {
+                "period": 4,
+                "clock": "03:05",
+                "description": "BOS defensive rebound",
+                "home_score": 101,
+                "away_score": 96,
+                "home_win_probability": 0.72,
+            },
+            {
+                "period": 4,
+                "clock": "02:41",
+                "description": "BOS makes layup",
+                "home_score": 103,
+                "away_score": 96,
+                "home_win_probability": 0.80,
+            },
+            {
+                "period": 4,
+                "clock": "02:14",
+                "description": "NYK makes free throws",
+                "home_score": 104,
+                "away_score": 98,
+                "home_win_probability": 0.78,
+            },
+        ]
+    }
+
+
+@app.get("/games/demo-001/state")
+def get_demo_game_state():
+    return {
+        "game_id": "demo-001",
+        "period": 4,
+        "clock": "02:14",
+        "home_team": "BOS",
+        "away_team": "NYK",
+        "home_score": 104,
+        "away_score": 98,
+        "score_differential": 6,
+        "possession": "BOS",
+        "home_fouls": 4,
+        "away_fouls": 6,
+        "home_bonus": False,
+        "away_bonus": True,
+        "home_win_probability": 0.78,
+        "away_win_probability": 0.22,
+    }

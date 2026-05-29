@@ -6,13 +6,35 @@ const API_BASE_URL =
 console.log("API_BASE_URL:", API_BASE_URL);
 
 export async function fetchLiveGames(): Promise<Game[]> {
-  const response = await fetch(`${API_BASE_URL}/games/live`);
+  try {
+    const response = await fetch(`${API_BASE_URL}/games/live`);
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch games");
+    if (!response.ok) {
+      throw new Error("Failed to fetch live games");
+    }
+
+    const games = await response.json();
+
+    if (!games || games.length === 0) {
+      const demoResponse = await fetch(`${API_BASE_URL}/games/demo`);
+
+      if (!demoResponse.ok) {
+        throw new Error("Failed to fetch demo games");
+      }
+
+      return demoResponse.json();
+    }
+
+    return games;
+  } catch {
+    const demoResponse = await fetch(`${API_BASE_URL}/games/demo`);
+
+    if (!demoResponse.ok) {
+      throw new Error("Failed to fetch games");
+    }
+
+    return demoResponse.json();
   }
-
-  return response.json();
 }
 
 export async function fetchWinProbabilityTimeline(
