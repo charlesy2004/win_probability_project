@@ -7,8 +7,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GroupShuffleSplit
+from xgboost import XGBClassifier
 from db.session import session_local
 from db.models import HistoricalGameState
+
 
 MODEL_DIR = "models"
 MODEL_PATH = os.path.join(MODEL_DIR, "win_probability_model.pkl")
@@ -63,24 +65,58 @@ def train_model():
     #     stratify=y,
     # )
 
-    model = Pipeline([
+    logistic_model = Pipeline([
         ("scaler", StandardScaler()),
         ("classifier", LogisticRegression(max_iter=1000)),
     ])
-    model.fit(X_train, y_train)
-    y_pred = model.predict(X_test)
-    y_proba = model.predict_proba(X_test)[:, 1]
+    logistic_model.fit(X_train, y_train)
+    y_pred = logistic_model.predict(X_test)
+    y_proba = logistic_model.predict_proba(X_test)[:, 1]
+    
+    xgb_model = XGBClassifier(
+        n_estimators=300,
+        max_depth=4,
+        learning_rate=0.05,
+        subsample=0.8,
+        colsample_bytree=0.8,
+        eval_metric="logloss",
+        random_state=42,
+        n_jobs=-1,
+    )
+    xgb_model.fit(X_train, y_train)
+    y_pred_xgb = xgb_model.predict(X_test)
+    y_proba_xgb = xgb_model.predict_proba(X_test)[:, 1]
+
     accuracy = accuracy_score(y_test, y_pred)
     roc_auc = roc_auc_score(y_test, y_proba)
     print(f"Model Accuracy: {accuracy:.4f}")
     print(f"Model ROC AUC: {roc_auc:.4f}")
     print("Classification Report:")
     print(classification_report(y_test, y_pred))
+
+    accuracy_xgb = accuracy_score(y_test, y_pred_xgb)
+    roc_auc_xgb = roc_auc_score(y_test, y_proba_xgb)
+    print(f"XGBoost Model Accuracy: {accuracy_xgb:.4f}")
+    print(f"XGBoost Model ROC AUC: {roc_auc_xgb:.4f}")
+    print("XGBoost Classification Report:")
+    print(classification_report(y_test, y_pred_xgb))
+
     os.makedirs(MODEL_DIR, exist_ok=True)
     joblib.dump(
-        {"model": model, "feature_columns": FEATURE_COLUMNS},
-        MODEL_PATH,
+        {
+            "model": logistic_model,
+            "feature_columns": FEATURE_COLUMNS,
+            "model_type": "logistic_regression",
+        },
+        "models/logistic_win_probability_model.pkl",
     )
-    print(f"Model saved to {MODEL_PATH}")
 
+    joblib.dump(
+        {
+            "model": xgb_model,
+            "feature_columns": FEATURE_COLUMNS,
+            "model_type": "xgboost",
+        },
+        "models/xgboost_win_probability_model.pkl",
+    )
 if __name__ == "__main__":    train_model()
