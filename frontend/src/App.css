@@ -171,3 +171,14 @@ h1 {
   font-weight: 700;
   cursor: pointer;
 }
+
+.model-badge {
+  display: inline-block;
+  margin-top: 0.75rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: #eef2ff;
+  color: #3730a3;
+}
