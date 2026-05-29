@@ -53,6 +53,9 @@ def save_scoreboard_snapshot(db: Session, game: dict) -> ScoreboardSnapshot | No
         status=game.get("status"),
 
         home_win_probability=game["home_win_probability"],
+
+        model_type="xgboost",
+        model_version="v1",
     )
 
     db.add(snapshot)

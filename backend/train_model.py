@@ -117,6 +117,6 @@ def train_model():
             "feature_columns": FEATURE_COLUMNS,
             "model_type": "xgboost",
         },
-        "models/xgboost_win_probability_model.pkl",
+        "models/win_probability_model.pkl",
     )
 if __name__ == "__main__":    train_model()

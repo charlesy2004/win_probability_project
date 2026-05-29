@@ -63,7 +63,9 @@ def format_game(event: dict) -> dict:
             away_score=away_score,
             period=period,
             clock=clock
-        )
+        ),
+        "model_type": "xgboost",
+        "model_version": "v1"
     }
 
 

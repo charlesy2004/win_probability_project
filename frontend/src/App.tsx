@@ -76,8 +76,9 @@ function App() {
         <h1>Win Probability Dashboard</h1>
         
         <p className="subtitle">
-          Live game state, score, and model-estimated home team win probability.
+          Live game state and XGBoost-estimated home team win probability.
         </p>
+        <p className="model-badge">Model: XGBoost v1</p>
       </section>
 
       <section className="games-grid">

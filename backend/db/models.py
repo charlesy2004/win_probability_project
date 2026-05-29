@@ -31,6 +31,9 @@ class ScoreboardSnapshot(Base):
 
     home_win_probability = Column(Float, nullable=False)
 
+    model_type = Column(String, nullable=False)
+    model_version = Column(String, nullable=False)
+
     created_at = Column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
