@@ -22,9 +22,13 @@ def capture_scoreboard_snapshot_once() -> int:
 
     try:
         raw_payload = fetch_espn_scoreboard()
-        save_raw_espn_scoreboard_payload(db, raw_payload, endpoint=ESPN_SCOREBOARD_URL)
+        _, raw_inserted = save_raw_espn_scoreboard_payload(db, raw_payload, endpoint=ESPN_SCOREBOARD_URL)
         events = raw_payload.get("events", [])
-        logging.info(f"Fetched raw ESPN scoreboard payload with {len(events)} events")
+        logging.info(
+            "Fetched raw ESPN scoreboard payload with %s events raw_inserted=%s",
+            len(events),
+            raw_inserted,
+        )
         games = [format_game(event) for event in events]
         inserted_count = save_scoreboard_snapshots(db, games)
         db.commit()
@@ -34,16 +38,6 @@ def capture_scoreboard_snapshot_once() -> int:
             inserted_count,
         )
         return inserted_count
-        # games = get_live_games()
-        # inserted_count = save_scoreboard_snapshots(db, games)
-
-        # logging.info(
-        #     "Snapshot complete: games=%s inserted=%s",
-        #     len(games),
-        #     inserted_count,
-        # )
-
-        # return inserted_count
 
     except Exception:
         db.rollback()

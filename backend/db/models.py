@@ -83,7 +83,7 @@ class RawEspnScoreboardPayload(Base):
     __tablename__ = "raw_espn_scoreboard_payloads"
 
     id = Column(Integer, primary_key=True, index=True)
-
+    payload_hash = Column(String, nullable=True, index=True, unique=True)
     source = Column(String, nullable=False, default="espn")
     endpoint = Column(String, nullable=False)
     payload = Column(JSON, nullable=False)
