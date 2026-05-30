@@ -46,8 +46,7 @@ app = FastAPI(title="NBA Win Probability API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:5173",
-        "https://win-probability-project-as5nddzel-charlesy2004s-projects.vercel.app/",
+        "*"
     ],
     allow_credentials=False,
     allow_methods=["*"],
