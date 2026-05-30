@@ -18,6 +18,8 @@ def save_scoreboard_snapshot(db: Session, game: dict) -> ScoreboardSnapshot | No
         .filter(ScoreboardSnapshot.seconds_remaining == seconds_remaining)
         .first()
     )
+    if existing_snapshot:
+        return None
     snapshot = ScoreboardSnapshot(
         game_id=game["game_id"],
         name=game.get("name"),
@@ -38,12 +40,17 @@ def save_scoreboard_snapshot(db: Session, game: dict) -> ScoreboardSnapshot | No
         model_type="xgboost",
         model_version="v1",
     )
+    try:
+        db.add(snapshot)
+        db.commit()
+        db.refresh(snapshot)
+        return snapshot
+    except Exception:
+        db.rollback()
+        raise
+        return None
 
-    db.add(snapshot)
-    db.commit()
-    db.refresh(snapshot)
 
-    return snapshot
 
 
 def save_scoreboard_snapshots(db: Session, games: list[dict]) -> int:

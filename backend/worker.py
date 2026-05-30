@@ -47,9 +47,13 @@ def main() -> None:
         SNAPSHOT_INTERVAL_SECONDS,
     )
 
-    while True:
-        capture_scoreboard_snapshot_once()
-        time.sleep(SNAPSHOT_INTERVAL_SECONDS)
+    try:
+        while True:
+            capture_scoreboard_snapshot_once()
+            time.sleep(SNAPSHOT_INTERVAL_SECONDS)
+
+    except KeyboardInterrupt:
+        logging.info("Snapshot worker stopped by user")
 
 
 if __name__ == "__main__":
