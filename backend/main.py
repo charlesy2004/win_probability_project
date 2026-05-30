@@ -10,8 +10,8 @@ from services.espn_service import (
 from db.session import session_local
 from services.snapshot_service import save_scoreboard_snapshots, get_snapshots_for_game
 from services.historical_data_service import create_historical_game_state
-import asyncio
-from contextlib import asynccontextmanager
+# import asyncio
+# from contextlib import asynccontextmanager
 
 SNAPSHOT_CAPTURE_INTERVAL_SECONDS = 60
 def capture_scoreboard_snapshot_once() -> int:
@@ -26,26 +26,29 @@ def capture_scoreboard_snapshot_once() -> int:
     finally:
         db.close()
     
-async def capture_snapshot_loop():
-    while True:
-        try:
-            await asyncio.to_thread(capture_scoreboard_snapshot_once)
-        except Exception as e:
-            print(f"Error capturing scoreboard snapshot: {e}")
-        await asyncio.sleep(SNAPSHOT_CAPTURE_INTERVAL_SECONDS)
+# async def capture_snapshot_loop():
+#     while True:
+#         try:
+#             await asyncio.to_thread(capture_scoreboard_snapshot_once)
+#         except Exception as e:
+#             print(f"Error capturing scoreboard snapshot: {e}")
+#         await asyncio.sleep(SNAPSHOT_CAPTURE_INTERVAL_SECONDS)
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    task = asyncio.create_task(capture_snapshot_loop())
-    try:
-        yield
-    except asyncio.CancelledError:
-        pass
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     task = asyncio.create_task(capture_snapshot_loop())
+#     try:
+#         yield
+#     except asyncio.CancelledError:
+#         pass
     
-app = FastAPI(title="NBA Win Probability API", lifespan=lifespan)
+app = FastAPI(title="NBA Win Probability API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "https://win-probability-project-as5nddzel-charlesy2004s-projects.vercel.app/",
+    ],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
