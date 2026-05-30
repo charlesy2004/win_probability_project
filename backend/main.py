@@ -10,8 +10,7 @@ from services.espn_service import (
 from db.session import session_local
 from services.snapshot_service import save_scoreboard_snapshots, get_snapshots_for_game
 from services.historical_data_service import create_historical_game_state
-# import asyncio
-# from contextlib import asynccontextmanager
+from db.models import ScoreboardSnapshot, HistoricalGameState
 
 SNAPSHOT_CAPTURE_INTERVAL_SECONDS = 60
 def capture_scoreboard_snapshot_once() -> int:
@@ -60,6 +59,47 @@ def root():
 @app.get("/health")
 def health_check():
     return {"status": "healthy"}
+
+@app.get("/pipeline/status")
+def pipeline_status():
+    db = session_local()
+    try:
+        latest_snapshot = (
+            db.query(ScoreboardSnapshot)
+            .order_by(ScoreboardSnapshot.created_at.desc())
+            .first()
+        )
+        snapshot_cnt = db.query(ScoreboardSnapshot).count()
+        if not latest_snapshot:
+            return {
+                "status": "No snapshots captured yet",
+                "ingestion_mode": "render background worker",
+                "snapshot_count": 0,
+                "latest_snapshot": None,
+                "model_type": "xgboost",
+                "model_version": "v1",
+            }
+        return {
+            "status": "OK",
+            "ingestion_mode": "render background worker",
+            "snapshot_count": snapshot_cnt,
+            "latest_snapshot": {
+                "game_id": latest_snapshot.game_id,
+                "period": latest_snapshot.period,
+                "clock": latest_snapshot.clock,
+                "seconds_remaining": latest_snapshot.seconds_remaining,
+                "home_score": latest_snapshot.home_score,
+                "away_score": latest_snapshot.away_score,
+                "home_win_probability": latest_snapshot.home_win_probability,
+                "created_at": latest_snapshot.created_at.isoformat(),
+            },
+            "model_type": latest_snapshot.model_type,
+            "model_version": latest_snapshot.model_version,
+
+        }
+
+    finally:
+        db.close()
 
 @app.get("/games/live")
 def live_games():
