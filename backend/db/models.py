@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, Float, Integer, String
+from sqlalchemy import Column, DateTime, Float, Integer, String, Float, DateTime, UniqueConstraint
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -8,6 +8,14 @@ Base = declarative_base()
 
 class ScoreboardSnapshot(Base):
     __tablename__ = "scoreboard_snapshots"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "game_id",
+            "seconds_remaining",
+            name="uq_scoreboard_snapshot_game_time_left",
+        ),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
 

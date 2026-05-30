@@ -12,48 +12,29 @@ def save_scoreboard_snapshot(db: Session, game: dict) -> ScoreboardSnapshot | No
     score_diff = home_score - away_score
     seconds_remaining = calculate_seconds_remaining(period, clock)
     game_progress = calculate_game_progress(period, clock)
-    latest_snapshot = (
+    existing_snapshot = (
         db.query(ScoreboardSnapshot)
         .filter(ScoreboardSnapshot.game_id == game["game_id"])
-        .order_by(ScoreboardSnapshot.created_at.desc())
+        .filter(ScoreboardSnapshot.seconds_remaining == seconds_remaining)
         .first()
     )
-
-    if latest_snapshot:
-        same_game_state = (
-            latest_snapshot.home_score == game["home_score"]
-            and latest_snapshot.away_score == game["away_score"]
-            and latest_snapshot.period == game.get("period")
-            and latest_snapshot.clock == game.get("clock")
-            and latest_snapshot.status == game.get("status")
-            and latest_snapshot.home_win_probability == game["home_win_probability"]
-        )
-
-        if same_game_state:
-            return None
-
     snapshot = ScoreboardSnapshot(
         game_id=game["game_id"],
         name=game.get("name"),
         short_name=game.get("short_name"),
-
         home_team=game["home_team"],
         away_team=game["away_team"],
         home_team_abbr=game.get("home_team_abbr"),
         away_team_abbr=game.get("away_team_abbr"),
-
-        home_score=game["home_score"],
-        away_score=game["away_score"],
+        home_score=home_score,
+        away_score=away_score,
         score_diff=score_diff,
         seconds_remaining=seconds_remaining,
         game_progress=game_progress,
-
-        period=game.get("period"),
-        clock=game.get("clock"),
+        period=period,
+        clock=clock,
         status=game.get("status"),
-
         home_win_probability=game["home_win_probability"],
-
         model_type="xgboost",
         model_version="v1",
     )
