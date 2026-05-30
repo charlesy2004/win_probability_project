@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, Float, Integer, String, Float, DateTime, UniqueConstraint
+from sqlalchemy import Column, DateTime, Float, Integer, String, Float, DateTime, UniqueConstraint, JSON
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -78,3 +78,14 @@ class HistoricalGameState(Base):
         default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
+
+class RawEspnScoreboardPayload(Base):
+    __tablename__ = "raw_espn_scoreboard_payloads"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    source = Column(String, nullable=False, default="espn")
+    endpoint = Column(String, nullable=False)
+    payload = Column(JSON, nullable=False)
+    event_cnt = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), nullable=False)
