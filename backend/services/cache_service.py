@@ -60,3 +60,25 @@ def get_game_from_cache(game_id: str) -> dict | None:
     
     payload = json.loads(cached)
     return payload.get("game")
+
+def set_game_plays(game_id: str, plays: list[dict]) -> None:
+    payload = {
+        "plays": plays,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+    redis_client.set(
+        f"{GAME_LATEST_KEY_PREFIX}:{game_id}:plays",
+        json.dumps(payload),
+        ex=CACHE_TTL_SECONDS,
+    )
+
+
+def get_game_plays_from_cache(game_id: str) -> list[dict] | None:
+    cached = redis_client.get(f"{GAME_LATEST_KEY_PREFIX}:{game_id}:plays")
+
+    if not cached:
+        return None
+
+    payload = json.loads(cached)
+    return payload.get("plays")

@@ -11,7 +11,13 @@ from services.espn_service import (
 )
 from services.snapshot_service import save_scoreboard_snapshots
 from services.raw_payload_service import save_raw_espn_scoreboard_payload
-from services.cache_service import set_live_games
+from services.espn_service import (
+    ESPN_SCOREBOARD_URL,
+    fetch_espn_scoreboard,
+    format_game,
+    get_game_plays,
+)
+from services.cache_service import set_live_games, set_game_plays
 
 load_dotenv()
 
@@ -46,6 +52,25 @@ def capture_scoreboard_snapshot_once() -> int:
         games = [format_game(event) for event in events]
         set_live_games(games)
         logging.info("Updated Redis live game cache with %s games", len(games))
+        for game in games:
+            game_id = game.get("game_id")
+            status = game.get("status", "")
+
+            if not game_id:
+                continue
+
+            # Avoid hammering play endpoint for games that have not started.
+            if status.lower() == "scheduled":
+                continue
+
+            plays = get_game_plays(game_id)
+            set_game_plays(game_id, plays)
+
+            logging.info(
+                "Updated Redis play cache for game_id=%s plays=%s",
+                game_id,
+                len(plays),
+            )
         inserted_count = save_scoreboard_snapshots(db, games)
 
         # Commits raw payload metadata when no new scoreboard snapshots are inserted.

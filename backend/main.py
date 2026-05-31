@@ -11,7 +11,7 @@ from db.session import session_local
 from services.snapshot_service import save_scoreboard_snapshots, get_snapshots_for_game
 from services.historical_data_service import create_historical_game_state
 from db.models import ScoreboardSnapshot, HistoricalGameState
-from services.cache_service import get_live_games_from_cache
+from services.cache_service import get_live_games_from_cache, get_game_plays_from_cache
 
 SNAPSHOT_CAPTURE_INTERVAL_SECONDS = 60
 def capture_scoreboard_snapshot_once() -> int:
@@ -108,7 +108,7 @@ def live_games():
 
     if cached_games is not None:
         return cached_games
-        
+
     return get_live_games()
 
 @app.get("/games/{game_id}/win-probability")
@@ -131,11 +131,23 @@ def win_probability_timeline(game_id: str):
 
 @app.get("/games/{game_id}/plays")
 def game_plays(game_id: str):
+    cached_plays = get_game_plays_from_cache(game_id)
+
+    if cached_plays is not None:
+        return {
+            "game_id": game_id,
+            "count": len(cached_plays),
+            "plays": cached_plays,
+            "source": "redis",
+        }
+
     plays = get_game_plays(game_id)
+
     return {
         "game_id": game_id,
         "count": len(plays),
         "plays": plays,
+        "source": "espn",
     }
 
 @app.get("/games/{game_id}/state")
