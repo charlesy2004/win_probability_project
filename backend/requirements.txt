@@ -10,3 +10,4 @@ joblib
 nba_api
 xgboost
 supabase
+redis
