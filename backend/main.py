@@ -180,8 +180,8 @@ def game_state_dashboard(game_id: str):
             "message": "Game state not available",
         }
 
-    home_score = game.get("home_score") or 0
-    away_score = game.get("away_score") or 0
+    home_score = int(game.get("home_score") or 0)
+    away_score = int(game.get("away_score") or 0)
 
     return {
         "game_id": game_id,
