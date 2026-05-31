@@ -4,9 +4,14 @@ import logging
 from dotenv import load_dotenv
 
 from db.session import session_local
-from services.espn_service import fetch_espn_scoreboard, format_game, ESPN_SCOREBOARD_URL
+from services.espn_service import (
+    ESPN_SCOREBOARD_URL,
+    fetch_espn_scoreboard,
+    format_game,
+)
 from services.snapshot_service import save_scoreboard_snapshots
 from services.raw_payload_service import save_raw_espn_scoreboard_payload
+
 load_dotenv()
 
 logging.basicConfig(
@@ -22,21 +27,34 @@ def capture_scoreboard_snapshot_once() -> int:
 
     try:
         raw_payload = fetch_espn_scoreboard()
-        _, raw_inserted = save_raw_espn_scoreboard_payload(db, raw_payload, endpoint=ESPN_SCOREBOARD_URL)
+
+        _, raw_inserted = save_raw_espn_scoreboard_payload(
+            db=db,
+            payload=raw_payload,
+            endpoint=ESPN_SCOREBOARD_URL,
+        )
+
         events = raw_payload.get("events", [])
+
         logging.info(
             "Fetched raw ESPN scoreboard payload with %s events raw_inserted=%s",
             len(events),
             raw_inserted,
         )
+
         games = [format_game(event) for event in events]
+
         inserted_count = save_scoreboard_snapshots(db, games)
+
+        # Commits raw payload metadata when no new scoreboard snapshots are inserted.
         db.commit()
+
         logging.info(
             "Snapshot complete: games=%s inserted=%s",
             len(games),
             inserted_count,
         )
+
         return inserted_count
 
     except Exception:
