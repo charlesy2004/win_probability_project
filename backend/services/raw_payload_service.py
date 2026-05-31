@@ -39,7 +39,7 @@ def save_raw_espn_scoreboard_payload(
     raw_payload = RawEspnScoreboardPayload(
         source="espn",
         endpoint=endpoint,
-        payload=payload,  # temporary during transition
+        payload=None,
         payload_hash=payload_hash,
         storage_bucket=bucket,
         storage_path=path,

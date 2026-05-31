@@ -86,7 +86,7 @@ class RawEspnScoreboardPayload(Base):
     payload_hash = Column(String, nullable=True, index=True, unique=True)
     source = Column(String, nullable=False, default="espn")
     endpoint = Column(String, nullable=False)
-    payload = Column(JSON, nullable=False)
+    payload = Column(JSON, nullable=True)
     storage_bucket = Column(String, nullable=True)
     storage_path = Column(String, nullable=True)
     event_cnt = Column(Integer, nullable=False, default=0)
