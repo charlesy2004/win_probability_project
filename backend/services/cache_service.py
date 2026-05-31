@@ -1,8 +1,8 @@
-import redis
-import os
 import json
+import os
 from datetime import datetime, timezone
 
+import redis
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,20 +12,30 @@ LIVE_GAMES_KEY = "nba:games:live"
 GAME_LATEST_KEY_PREFIX = "nba:game"
 CACHE_TTL_SECONDS = int(os.getenv("CACHE_TTL_SECONDS", "120"))
 
-if not REDIS_URL:
-    raise ValueError("Failed to initialize Redis client")
+redis_client = None
 
-redis_client = redis.from_url(REDIS_URL, decode_responses=True)
+if REDIS_URL:
+    try:
+        redis_client = redis.from_url(REDIS_URL, decode_responses=True)
+        redis_client.ping()
+    except Exception:
+        redis_client = None
+
 def set_live_games(games: list[dict]) -> None:
+    if redis_client is None:
+        return
+
+    updated_at = datetime.now(timezone.utc).isoformat()
+
     payload = {
         "games": games,
-        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": updated_at,
     }
 
     redis_client.set(
-        LIVE_GAMES_KEY, 
-        json.dumps(payload), 
-        ex=CACHE_TTL_SECONDS
+        LIVE_GAMES_KEY,
+        json.dumps(payload),
+        ex=CACHE_TTL_SECONDS,
     )
 
     for game in games:
@@ -38,30 +48,43 @@ def set_live_games(games: list[dict]) -> None:
             json.dumps(
                 {
                     "game": game,
-                    "updated_at": datetime.now(timezone.utc).isoformat(),
+                    "updated_at": updated_at,
                 }
             ),
             ex=CACHE_TTL_SECONDS,
         )
-    
-def get_live_games_from_cache() -> dict | None:
+
+
+def get_live_games_from_cache() -> list[dict] | None:
+    if redis_client is None:
+        return None
+
     cached = redis_client.get(LIVE_GAMES_KEY)
 
     if not cached:
         return None
+
     payload = json.loads(cached)
     return payload.get("games")
 
+
 def get_game_from_cache(game_id: str) -> dict | None:
+    if redis_client is None:
+        return None
+
     cached = redis_client.get(f"{GAME_LATEST_KEY_PREFIX}:{game_id}:latest")
 
     if not cached:
         return None
-    
+
     payload = json.loads(cached)
     return payload.get("game")
 
+
 def set_game_plays(game_id: str, plays: list[dict]) -> None:
+    if redis_client is None:
+        return
+
     payload = {
         "plays": plays,
         "updated_at": datetime.now(timezone.utc).isoformat(),
@@ -75,6 +98,9 @@ def set_game_plays(game_id: str, plays: list[dict]) -> None:
 
 
 def get_game_plays_from_cache(game_id: str) -> list[dict] | None:
+    if redis_client is None:
+        return None
+
     cached = redis_client.get(f"{GAME_LATEST_KEY_PREFIX}:{game_id}:plays")
 
     if not cached:
