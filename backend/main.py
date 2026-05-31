@@ -11,7 +11,7 @@ from db.session import session_local
 from services.snapshot_service import save_scoreboard_snapshots, get_snapshots_for_game
 from services.historical_data_service import create_historical_game_state
 from db.models import ScoreboardSnapshot, HistoricalGameState
-from services.cache_service import get_live_games_from_cache, get_game_plays_from_cache
+from services.cache_service import get_live_games_from_cache, get_game_plays_from_cache, get_game_from_cache
 
 SNAPSHOT_CAPTURE_INTERVAL_SECONDS = 60
 def capture_scoreboard_snapshot_once() -> int:
@@ -152,12 +152,49 @@ def game_plays(game_id: str):
 
 @app.get("/games/{game_id}/state")
 def game_state_dashboard(game_id: str):
-    state = get_game_state_dashboard(game_id)
+    game = get_game_from_cache(game_id)
 
-    if not state:
-        raise HTTPException(status_code=404, detail="Game not found")
+    if not game:
+        live_games = get_live_games_from_cache()
 
-    return state
+        if live_games:
+            game = next(
+                (g for g in live_games if str(g.get("game_id")) == str(game_id)),
+                None,
+            )
+
+    if not game:
+        try:
+            live_games = get_live_games()
+            game = next(
+                (g for g in live_games if str(g.get("game_id")) == str(game_id)),
+                None,
+            )
+        except Exception:
+            game = None
+
+    if not game:
+        return {
+            "game_id": game_id,
+            "status": "unavailable",
+            "message": "Game state not available",
+        }
+
+    home_score = game.get("home_score") or 0
+    away_score = game.get("away_score") or 0
+
+    return {
+        "game_id": game_id,
+        "period": game.get("period"),
+        "clock": game.get("clock"),
+        "status": game.get("status"),
+        "home_team": game.get("home_team"),
+        "away_team": game.get("away_team"),
+        "home_score": home_score,
+        "away_score": away_score,
+        "score_diff": home_score - away_score,
+        "home_win_probability": game.get("home_win_probability"),
+    }
 
 @app.get("/games/{game_id}")
 def game_detail(game_id: str):
