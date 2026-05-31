@@ -87,5 +87,7 @@ class RawEspnScoreboardPayload(Base):
     source = Column(String, nullable=False, default="espn")
     endpoint = Column(String, nullable=False)
     payload = Column(JSON, nullable=False)
+    storage_bucket = Column(String, nullable=True)
+    storage_path = Column(String, nullable=True)
     event_cnt = Column(Integer, nullable=False, default=0)
     created_at = Column(DateTime(timezone=True), nullable=False)
