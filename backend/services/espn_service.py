@@ -105,7 +105,7 @@ def get_win_probability_timeline(game_id: str) -> dict:
 def get_game_plays(game_id: str) -> list[dict]:
     url = (
         f"{ESPN_CORE_NBA_BASE_URL}/events/{game_id}/"
-        f"competitions/{game_id}/plays?limit=300"
+        f"competitions/{game_id}/plays?limit=1000"
     )
 
     response = requests.get(url, timeout=10)
