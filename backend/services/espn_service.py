@@ -141,7 +141,10 @@ def get_game_plays(game_id: str) -> list[dict]:
                 "wallclock": play.get("wallclock"),
             }
         )
-
+    cleaned_plays.sort(
+        key=lambda play: int(play.get("sequence_number") or 0),
+        reverse=True,
+    )
     return cleaned_plays
 
 def get_game_state_dashboard(game_id: str) -> dict:

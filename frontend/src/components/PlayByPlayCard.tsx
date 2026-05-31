@@ -5,25 +5,30 @@ type PlayByPlayCardProps = {
 };
 
 function PlayByPlayCard({ plays }: PlayByPlayCardProps) {
+  const latestPlays = [...plays]
+    .sort((a, b) => Number(b.sequence_number ?? 0) - Number(a.sequence_number ?? 0))
+    .slice(0, 25);
+
   return (
     <section className="play-card">
       <div className="play-card-header">
         <h2>Live Play-by-Play</h2>
-        <p>{plays.length} events</p>
+        <p>
+          Latest {latestPlays.length} of {plays.length} events
+        </p>
       </div>
 
-      {plays.length === 0 ? (
+      {latestPlays.length === 0 ? (
         <p className="empty-state">
           No play-by-play available yet. This usually means the game has not
           started.
         </p>
       ) : (
         <div className="play-list">
-          {plays.map((play, index) => {
-            const winProbability =
-              play.home_win_probability !== null
-                ? `${(play.home_win_probability * 100).toFixed(1)}%`
-                : "--";
+          {latestPlays.map((play, index) => {
+            const hasWinProbability =
+              typeof play.home_win_probability === "number" &&
+              !Number.isNaN(play.home_win_probability);
 
             return (
               <article key={play.id ?? index} className="play-row">
@@ -46,7 +51,12 @@ function PlayByPlayCard({ plays }: PlayByPlayCardProps) {
                   <p>
                     {play.away_score ?? "-"} - {play.home_score ?? "-"}
                   </p>
-                  <p className="play-wp">WP: {winProbability}</p>
+
+                  {hasWinProbability && (
+                    <p className="play-wp">
+                      WP: {(play.home_win_probability * 100).toFixed(1)}%
+                    </p>
+                  )}
                 </div>
               </article>
             );
