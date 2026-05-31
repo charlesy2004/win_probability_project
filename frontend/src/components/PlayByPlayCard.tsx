@@ -6,7 +6,10 @@ type PlayByPlayCardProps = {
 
 function PlayByPlayCard({ plays }: PlayByPlayCardProps) {
   const latestPlays = [...plays]
-    .sort((a, b) => Number(b.sequence_number ?? 0) - Number(a.sequence_number ?? 0))
+    .sort(
+      (a, b) =>
+        Number(b.sequence_number ?? 0) - Number(a.sequence_number ?? 0)
+    )
     .slice(0, 25);
 
   return (
@@ -26,9 +29,11 @@ function PlayByPlayCard({ plays }: PlayByPlayCardProps) {
       ) : (
         <div className="play-list">
           {latestPlays.map((play, index) => {
+            const homeWinProbability = play.home_win_probability;
+
             const hasWinProbability =
-              typeof play.home_win_probability === "number" &&
-              !Number.isNaN(play.home_win_probability);
+              typeof homeWinProbability === "number" &&
+              !Number.isNaN(homeWinProbability);
 
             return (
               <article key={play.id ?? index} className="play-row">
@@ -54,7 +59,7 @@ function PlayByPlayCard({ plays }: PlayByPlayCardProps) {
 
                   {hasWinProbability && (
                     <p className="play-wp">
-                      WP: {(play.home_win_probability * 100).toFixed(1)}%
+                      WP: {(homeWinProbability * 100).toFixed(1)}%
                     </p>
                   )}
                 </div>

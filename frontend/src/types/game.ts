@@ -35,15 +35,22 @@ export type TimelinePoint = {
 };
 
 export type LivePlay = {
-  id: string | null;
-  period: number | null;
-  clock: string | null;
-  text: string | null;
-  type: string | null;
-  team: string | null;
-  home_score: number | null;
-  away_score: number | null;
-  home_win_probability: number | null;
+  id?: string;
+  sequence_number?: string | number;
+  period?: number | null;
+  clock?: string | null;
+  text?: string | null;
+  short_text?: string | null;
+  type?: string | null;
+  team?: string | null;
+  home_score?: number | string | null;
+  away_score?: number | string | null;
+  scoring_play?: boolean | null;
+  score_value?: number | null;
+  shooting_play?: boolean | null;
+  points_attempted?: number | null;
+  wallclock?: string | null;
+  home_win_probability?: number | null;
 };
 
 export type GameStateDashboard = {
