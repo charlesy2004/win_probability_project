@@ -33,7 +33,11 @@ def build_teams_table(game_log_df: pd.DataFrame) -> pd.DataFrame:
     ]
 
 
-def build_games_table(game_log_df: pd.DataFrame, season: str) -> pd.DataFrame:
+def build_games_table(
+    game_log_df: pd.DataFrame,
+    season: str,
+    season_type: str,
+) -> pd.DataFrame:
     rows = []
 
     for game_id, game_df in game_log_df.groupby("GAME_ID"):
@@ -53,6 +57,7 @@ def build_games_table(game_log_df: pd.DataFrame, season: str) -> pd.DataFrame:
             {
                 "nba_game_id": str(game_id),
                 "season": season,
+                "season_type": season_type,
                 "game_date": pd.to_datetime(home["GAME_DATE"]),
                 "home_team_id": str(home["TEAM_ID"]),
                 "away_team_id": str(away["TEAM_ID"]),

@@ -74,6 +74,7 @@ def read_games_for_season(season: str) -> pd.DataFrame:
         SELECT
             nba_game_id,
             season,
+            season_type,
             game_date,
             home_team_id,
             away_team_id,
@@ -86,7 +87,14 @@ def read_games_for_season(season: str) -> pd.DataFrame:
         WHERE season = %(season)s
           AND home_score IS NOT NULL
           AND away_score IS NOT NULL
-        ORDER BY game_date ASC, nba_game_id ASC
+        ORDER BY
+            CASE
+                WHEN season_type = 'Regular Season' THEN 1
+                WHEN season_type = 'Playoffs' THEN 2
+                ELSE 3
+            END,
+            game_date ASC,
+            nba_game_id ASC
     """
 
     return pd.read_sql(query, engine, params={"season": season})
@@ -105,6 +113,7 @@ def build_team_elo_rows(
     for _, game in games_df.iterrows():
         nba_game_id = str(game["nba_game_id"])
         season = str(game["season"])
+        season_type = str(game["season_type"])
         game_date = game["game_date"]
 
         home_team_id = str(game["home_team_id"])
@@ -138,6 +147,7 @@ def build_team_elo_rows(
                 "nba_team_id": home_team_id,
                 "opponent_team_id": away_team_id,
                 "season": season,
+                "season_type": season_type,
                 "game_date": game_date,
                 "is_home": True,
                 "pregame_elo": pregame_home_elo,
@@ -155,6 +165,7 @@ def build_team_elo_rows(
                 "nba_team_id": away_team_id,
                 "opponent_team_id": home_team_id,
                 "season": season,
+                "season_type": season_type,
                 "game_date": game_date,
                 "is_home": False,
                 "pregame_elo": pregame_away_elo,
@@ -176,6 +187,7 @@ def build_team_elo_rows(
             {
                 "nba_game_id": nba_game_id,
                 "season": season,
+                "season_type": season_type,
                 "home_team_id": home_team_id,
                 "away_team_id": away_team_id,
                 "pregame_home_elo": pregame_home_elo,
@@ -262,6 +274,7 @@ def read_games_for_seasons(seasons: list[str]) -> pd.DataFrame:
         SELECT
             nba_game_id,
             season,
+            season_type,
             game_date,
             home_team_id,
             away_team_id,
@@ -274,7 +287,15 @@ def read_games_for_seasons(seasons: list[str]) -> pd.DataFrame:
         WHERE season = ANY(%(seasons)s)
           AND home_score IS NOT NULL
           AND away_score IS NOT NULL
-        ORDER BY season ASC, game_date ASC, nba_game_id ASC
+        ORDER BY
+            season ASC,
+            CASE
+                WHEN season_type = 'Regular Season' THEN 1
+                WHEN season_type = 'Playoffs' THEN 2
+                ELSE 3
+            END,
+            game_date ASC,
+            nba_game_id ASC
     """
 
     return pd.read_sql(query, engine, params={"seasons": seasons})

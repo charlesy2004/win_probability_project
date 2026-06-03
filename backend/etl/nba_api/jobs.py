@@ -3,16 +3,23 @@ from etl.nba_api.loaders import load_games, load_teams
 from etl.nba_api.transforms import build_games_table, build_teams_table
 
 
-def load_historical_games_for_season(season: str) -> None:
-    print(f"Fetching NBA game log for {season}")
+def load_historical_games_for_season(season: str, season_type: str) -> None:
+    print(f"Fetching NBA game log for season={season}, season_type={season_type}")
 
-    game_log_df = fetch_league_game_log(season)
+    game_log_df = fetch_league_game_log(
+        season=season,
+        season_type=season_type,
+    )
 
     print("Transforming teams")
     teams_df = build_teams_table(game_log_df)
 
     print("Transforming games")
-    games_df = build_games_table(game_log_df, season)
+    games_df = build_games_table(
+        game_log_df=game_log_df,
+        season=season,
+        season_type=season_type,
+    )
 
     print(f"Loading {len(teams_df)} teams into database")
     teams_loaded = load_teams(teams_df)
@@ -21,6 +28,6 @@ def load_historical_games_for_season(season: str) -> None:
     games_loaded = load_games(games_df)
 
     print(
-        f"Finished loading {season}: "
+        f"Finished loading season={season}, season_type={season_type}: "
         f"teams_loaded={teams_loaded}, games_loaded={games_loaded}"
     )
