@@ -1,9 +1,14 @@
 from sqlalchemy.orm import Session
 
 from db.models import HistoricalGameState
+from services.prediction_service import (
+    calculate_seconds_remaining,
+    calculate_game_progress,
+    calculate_home_win_probability,
+)
 
 
-def bulk_create_historical_game_states(
+def create_historical_game_state(
     db: Session,
     game_id: str,
     home_team: str,
