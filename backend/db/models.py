@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, DateTime, Float, Integer, String
+from sqlalchemy import Column, DateTime, Float, Integer, String, Float, DateTime, UniqueConstraint, JSON
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -8,6 +8,14 @@ Base = declarative_base()
 
 class ScoreboardSnapshot(Base):
     __tablename__ = "scoreboard_snapshots"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "game_id",
+            "seconds_remaining",
+            name="uq_scoreboard_snapshot_game_time_left",
+        ),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
 
@@ -30,6 +38,9 @@ class ScoreboardSnapshot(Base):
     status = Column(String, nullable=True)
 
     home_win_probability = Column(Float, nullable=False)
+
+    model_type = Column(String, nullable=False)
+    model_version = Column(String, nullable=False)
 
     created_at = Column(
         DateTime(timezone=True),
@@ -86,3 +97,16 @@ class HistoricalGameState(Base):
         default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
+
+class RawEspnScoreboardPayload(Base):
+    __tablename__ = "raw_espn_scoreboard_payloads"
+
+    id = Column(Integer, primary_key=True, index=True)
+    payload_hash = Column(String, nullable=True, index=True, unique=True)
+    source = Column(String, nullable=False, default="espn")
+    endpoint = Column(String, nullable=False)
+    payload = Column(JSON, nullable=True)
+    storage_bucket = Column(String, nullable=True)
+    storage_path = Column(String, nullable=True)
+    event_cnt = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime(timezone=True), nullable=False)

@@ -41,6 +41,3 @@ data/
 
 .env
 backend/.env
-
-backend/data/raw/
-backend/data/processed/

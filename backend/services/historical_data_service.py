@@ -5,42 +5,58 @@ from db.models import HistoricalGameState
 
 def bulk_create_historical_game_states(
     db: Session,
-    rows: list[dict],
-) -> int:
-    """
-    Bulk insert historical game-state rows for one game.
+    game_id: str,
+    home_team: str,
+    away_team: str,
+    home_score: int,
+    away_score: int,
+    period: int,
+    clock: str,
+    final_home_score: int,
+    final_away_score: int,
+) -> HistoricalGameState | None:
+    existing_row = (
+        db.query(HistoricalGameState)
+        .filter(HistoricalGameState.game_id == game_id)
+        .filter(HistoricalGameState.period == period)
+        .filter(HistoricalGameState.clock == clock)
+        .filter(HistoricalGameState.home_score == home_score)
+        .filter(HistoricalGameState.away_score == away_score)
+        .first()
+    )
 
-    This is much faster than inserting/checking one play at a time.
+    if existing_row:
+        return None
 
-    Duplicate prevention:
-    - Query existing action_numbers for the game once
-    - Insert only rows with new action_numbers
-    """
-    if not rows:
-        return 0
+    score_diff = home_score - away_score
+    seconds_remaining = calculate_seconds_remaining(period, clock)
+    game_progress = calculate_game_progress(period, clock)
 
-    game_id = rows[0]["game_id"]
+    home_win_probability_baseline = calculate_home_win_probability(
+        home_score=home_score,
+        away_score=away_score,
+        period=period,
+        clock=clock,
+    )
 
-    existing_action_numbers = {
-        action_number
-        for (action_number,) in (
-            db.query(HistoricalGameState.action_number)
-            .filter(HistoricalGameState.game_id == game_id)
-            .all()
-        )
-    }
+    home_team_won = 1 if final_home_score > final_away_score else 0
 
-    new_rows = [
-        row
-        for row in rows
-        if row.get("action_number") is not None
-        and row.get("action_number") not in existing_action_numbers
-    ]
+    row = HistoricalGameState(
+        game_id=game_id,
+        home_team=home_team,
+        away_team=away_team,
+        home_score=home_score,
+        away_score=away_score,
+        score_diff=score_diff,
+        period=period,
+        clock=clock,
+        seconds_remaining=seconds_remaining,
+        game_progress=game_progress,
+        home_win_probability_baseline=home_win_probability_baseline,
+        final_home_score=final_home_score,
+        final_away_score=final_away_score,
+        home_team_won=home_team_won,
+    )
 
-    if not new_rows:
-        return 0
-
-    db.bulk_insert_mappings(HistoricalGameState, new_rows)
-    db.commit()
-
-    return len(new_rows)
+    db.add(row)
+    return row

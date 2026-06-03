@@ -2,15 +2,23 @@ import { useEffect, useState } from "react";
 import "./App.css";
 import GameCard from "./components/GameCard";
 import WinProbabilityChart from "./components/WinProbabilityChart";
-import type { Game, TimelinePoint } from "./types/game";
-import { fetchLiveGames, fetchWinProbabilityTimeline } from "./api/clients";
+import PlayByPlayCard from "./components/PlayByPlayCard";
+import GameStateCard from "./components/GameStateCard";
+import type { Game, TimelinePoint, LivePlay, GameStateDashboard } from "./types/game";
+import {
+  fetchLiveGames,
+  fetchWinProbabilityTimeline,
+  fetchGamePlays,
+  fetchGameState,
+} from "./api/clients";
 
 function App() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [timeline, setTimeline] = useState<TimelinePoint[]>([]);
-
+  const [plays, setPlays] = useState<LivePlay[]>([]);
+  const [gameState, setGameState] = useState<GameStateDashboard | null>(null);
   useEffect(() => {
     async function loadDashboardData() {
       try {
@@ -18,11 +26,16 @@ function App() {
         setGames(gamesData);
 
         if (gamesData.length > 0) {
-          const timelineData = await fetchWinProbabilityTimeline(
-            gamesData[0].game_id
-          );
+          const gameId = gamesData[0].game_id;
 
+          const timelineData = await fetchWinProbabilityTimeline(gameId);
           setTimeline(timelineData);
+
+          const playsData = await fetchGamePlays(gameId);
+          setPlays(playsData);
+
+          const stateData = await fetchGameState(gameId);
+          setGameState(stateData);
         }
       } catch (err) {
         if (err instanceof Error) {
@@ -45,22 +58,7 @@ function App() {
       clearInterval(intervalId);
     };
   }, []);
-  async function handleSaveSnapshot() {
-  try {
-    await saveScoreboardSnapshots();
 
-    if (games.length > 0) {
-      const timelineData = await fetchWinProbabilityTimeline(games[0].game_id);
-      setTimeline(timelineData);
-    }
-  } catch (err) {
-    if (err instanceof Error) {
-      setError(err.message);
-    } else {
-      setError("Something went wrong");
-    }
-  }
-}
   if (loading) {
     return <h1>Loading games...</h1>;
   }
@@ -74,10 +72,12 @@ function App() {
       <section className="hero">
         <p className="eyebrow">NBA Live Model</p>
         <h1>Win Probability Dashboard</h1>
-        
+
         <p className="subtitle">
-          Live game state, score, and model-estimated home team win probability.
+          Live game state and XGBoost-estimated home team win probability.
         </p>
+
+        <p className="model-badge">Model: XGBoost v1</p>
       </section>
 
       <section className="games-grid">
@@ -87,6 +87,10 @@ function App() {
       </section>
 
       {timeline.length > 0 && <WinProbabilityChart timeline={timeline} />}
+
+      {<GameStateCard state={gameState} />}
+
+      <PlayByPlayCard plays={plays} />
     </main>
   );
 }

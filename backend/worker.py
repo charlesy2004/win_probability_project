@@ -1,0 +1,112 @@
+import os
+import time
+import logging
+from dotenv import load_dotenv
+
+from db.session import session_local
+from services.espn_service import (
+    ESPN_SCOREBOARD_URL,
+    fetch_espn_scoreboard,
+    format_game,
+)
+from services.snapshot_service import save_scoreboard_snapshots
+from services.raw_payload_service import save_raw_espn_scoreboard_payload
+from services.espn_service import (
+    ESPN_SCOREBOARD_URL,
+    fetch_espn_scoreboard,
+    format_game,
+    get_game_plays,
+)
+from services.cache_service import set_live_games, set_game_plays
+
+load_dotenv()
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+)
+
+SNAPSHOT_INTERVAL_SECONDS = int(os.getenv("SNAPSHOT_INTERVAL_SECONDS", "60"))
+
+
+def capture_scoreboard_snapshot_once() -> int:
+    db = session_local()
+
+    try:
+        raw_payload = fetch_espn_scoreboard()
+
+        _, raw_inserted = save_raw_espn_scoreboard_payload(
+            db=db,
+            payload=raw_payload,
+            endpoint=ESPN_SCOREBOARD_URL,
+        )
+
+        events = raw_payload.get("events", [])
+
+        logging.info(
+            "Fetched raw ESPN scoreboard payload with %s events raw_inserted=%s",
+            len(events),
+            raw_inserted,
+        )
+
+        games = [format_game(event) for event in events]
+        set_live_games(games)
+        logging.info("Updated Redis live game cache with %s games", len(games))
+        for game in games:
+            game_id = game.get("game_id")
+            status = game.get("status", "")
+
+            if not game_id:
+                continue
+
+            # Avoid hammering play endpoint for games that have not started.
+            if status.lower() == "scheduled":
+                continue
+
+            plays = get_game_plays(game_id)
+            set_game_plays(game_id, plays)
+
+            logging.info(
+                "Updated Redis play cache for game_id=%s plays=%s",
+                game_id,
+                len(plays),
+            )
+        inserted_count = save_scoreboard_snapshots(db, games)
+
+        # Commits raw payload metadata when no new scoreboard snapshots are inserted.
+        db.commit()
+
+        logging.info(
+            "Snapshot complete: games=%s inserted=%s",
+            len(games),
+            inserted_count,
+        )
+
+        return inserted_count
+
+    except Exception:
+        db.rollback()
+        logging.exception("Snapshot failed")
+        return 0
+
+    finally:
+        db.close()
+
+
+def main() -> None:
+    logging.info(
+        "Starting NBA snapshot worker. Interval=%s seconds",
+        SNAPSHOT_INTERVAL_SECONDS,
+    )
+
+    try:
+        while True:
+            capture_scoreboard_snapshot_once()
+            time.sleep(SNAPSHOT_INTERVAL_SECONDS)
+
+    except KeyboardInterrupt:
+        logging.info("Snapshot worker stopped by user")
+
+
+if __name__ == "__main__":
+    main()

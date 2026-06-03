@@ -4,6 +4,9 @@ from services.prediction_service import calculate_home_win_probability
 ESPN_SCOREBOARD_URL = (
     "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
 )
+ESPN_CORE_NBA_BASE_URL = (
+    "https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba"
+)
 
 
 def fetch_espn_scoreboard() -> dict:
@@ -63,7 +66,9 @@ def format_game(event: dict) -> dict:
             away_score=away_score,
             period=period,
             clock=clock
-        )
+        ),
+        "model_type": "xgboost",
+        "model_version": "v1"
     }
 
 
@@ -95,4 +100,86 @@ def get_win_probability_timeline(game_id: str) -> dict:
             {"time": "Q4 12:00", "home_win_probability": 0.65},
             {"time": "Q4 6:00", "home_win_probability": 0.62},
         ],
+    }
+
+def get_game_plays(game_id: str) -> list[dict]:
+    url = (
+        f"{ESPN_CORE_NBA_BASE_URL}/events/{game_id}/"
+        f"competitions/{game_id}/plays?limit=1000"
+    )
+
+    response = requests.get(url, timeout=10)
+    response.raise_for_status()
+
+    data = response.json()
+    raw_plays = data.get("items", [])
+
+    cleaned_plays = []
+
+    for play in raw_plays:
+        period = play.get("period", {}).get("number")
+        clock = play.get("clock", {}).get("displayValue")
+
+        home_score = play.get("homeScore")
+        away_score = play.get("awayScore")
+
+        cleaned_plays.append(
+            {
+                "id": play.get("id"),
+                "sequence_number": play.get("sequenceNumber"),
+                "period": period,
+                "clock": clock,
+                "text": play.get("text"),
+                "short_text": play.get("shortText"),
+                "type": play.get("type", {}).get("text"),
+                "home_score": home_score,
+                "away_score": away_score,
+                "scoring_play": play.get("scoringPlay"),
+                "score_value": play.get("scoreValue"),
+                "shooting_play": play.get("shootingPlay"),
+                "points_attempted": play.get("pointsAttempted"),
+                "wallclock": play.get("wallclock"),
+            }
+        )
+    cleaned_plays.sort(
+        key=lambda play: int(play.get("sequence_number") or 0),
+        reverse=True,
+    )
+    return cleaned_plays
+
+def get_game_state_dashboard(game_id: str) -> dict:
+    game = get_game_by_id(game_id)
+
+    plays = get_game_plays(game_id)
+    if game is None:
+        return []
+    latest_play = plays[-1] if plays else None
+
+    home_score = game["home_score"]
+    away_score = game["away_score"]
+    score_diff = home_score - away_score
+    period = game.get("period", 0)
+    clock = game.get("clock", "0.0")
+    possession_team = None
+    if latest_play and latest_play["team"]:
+        possession_team = latest_play.get("team")
+    return {
+        "game_id": game_id,
+        "home_team": game["home_team"],
+        "away_team": game["away_team"],
+        "home_team_abbr": game["home_team_abbr"],
+        "away_team_abbr": game["away_team_abbr"],
+        "home_score": home_score,
+        "away_score": away_score,
+        "score_diff": score_diff,
+        "period": period,
+        "clock": clock,
+        "possession_team": possession_team,
+        "home_win_probability": game["home_win_probability"],
+
+        # Placeholder for now. ESPN may not expose current-period team fouls cleanly.
+        "home_fouls": None,
+        "away_fouls": None,
+        "home_in_bonus": False,
+        "away_in_bonus": False,
     }

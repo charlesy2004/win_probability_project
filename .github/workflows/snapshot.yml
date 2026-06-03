@@ -1,0 +1,14 @@
+name: Capture NBA snapshots
+
+on:
+  workflow_dispatch:
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Call snapshot endpoint
+        run: |
+          echo "Calling snapshot endpoint..."
+          curl -i -X POST "${{ secrets.SNAPSHOT_ENDPOINT }}"
