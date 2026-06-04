@@ -41,3 +41,4 @@ data/
 
 .env
 backend/.env
+backend/ml/data/
