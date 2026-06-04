@@ -1,0 +1,28 @@
+{
+  "model_name": "win_probability_nn_v1",
+  "model_type": "neural_network",
+  "model_path": "models/win_probability_nn_v1.keras",
+  "scaler_path": "models/win_probability_nn_scaler_v1.pkl",
+  "feature_columns": [
+    "score_diff",
+    "seconds_remaining",
+    "game_progress",
+    "period",
+    "home_score",
+    "away_score",
+    "pregame_home_elo",
+    "pregame_away_elo",
+    "team_rating_diff",
+    "home_days_rest",
+    "away_days_rest",
+    "rest_diff",
+    "home_back_to_back",
+    "away_back_to_back"
+  ],
+  "metrics": {
+    "accuracy": 0.7534,
+    "roc_auc": 0.8444,
+    "log_loss": 0.4763,
+    "brier_score": 0.1599
+  }
+}

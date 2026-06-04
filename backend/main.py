@@ -12,6 +12,12 @@ from services.snapshot_service import save_scoreboard_snapshots, get_snapshots_f
 from services.historical_data_service import create_historical_game_state
 from db.models import ScoreboardSnapshot, HistoricalGameState
 from services.cache_service import get_live_games_from_cache, get_game_plays_from_cache, get_game_from_cache
+from services.win_probability_model_service import predict_home_win_probability
+from services.team_strength_service import get_game_team_strength_features
+from services.game_state_feature_service import (
+    build_live_model_features,
+    calculate_baseline_probability,
+)
 
 SNAPSHOT_CAPTURE_INTERVAL_SECONDS = 60
 def capture_scoreboard_snapshot_once() -> int:
@@ -182,18 +188,74 @@ def game_state_dashboard(game_id: str):
 
     home_score = int(game.get("home_score") or 0)
     away_score = int(game.get("away_score") or 0)
+    period = int(game.get("period") or 0)
+    clock = game.get("clock")
+
+    db = session_local()
+
+    try:
+        team_strength_features = get_game_team_strength_features(
+            db=db,
+            game_id=game_id,
+        )
+    finally:
+        db.close()
+
+    home_win_probability = None
+    model_source = "unavailable"
+
+    if team_strength_features is not None:
+        try:
+            model_features = build_live_model_features(
+                home_score=home_score,
+                away_score=away_score,
+                period=period,
+                clock=clock,
+                team_strength_features=team_strength_features,
+            )
+
+            home_win_probability = predict_home_win_probability(model_features)
+            model_source = "neural_network_v1"
+
+        except Exception as error:
+            print(f"Neural network prediction failed for game_id={game_id}: {error}")
+
+            home_win_probability = calculate_baseline_probability(
+                home_score=home_score,
+                away_score=away_score,
+                period=period,
+                clock=clock,
+            )
+            model_source = "baseline_fallback_model_error"
+
+    else:
+        home_win_probability = calculate_baseline_probability(
+            home_score=home_score,
+            away_score=away_score,
+            period=period,
+            clock=clock,
+        )
+        model_source = "baseline_fallback_missing_team_strength"
+
+    away_win_probability = (
+        1 - home_win_probability
+        if home_win_probability is not None
+        else None
+    )
 
     return {
         "game_id": game_id,
-        "period": game.get("period"),
-        "clock": game.get("clock"),
+        "period": period,
+        "clock": clock,
         "status": game.get("status"),
         "home_team": game.get("home_team"),
         "away_team": game.get("away_team"),
         "home_score": home_score,
         "away_score": away_score,
         "score_diff": home_score - away_score,
-        "home_win_probability": game.get("home_win_probability"),
+        "home_win_probability": home_win_probability,
+        "away_win_probability": away_win_probability,
+        "model_source": model_source,
     }
 
 @app.get("/games/{game_id}")

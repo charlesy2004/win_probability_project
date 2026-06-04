@@ -1,5 +1,5 @@
 import requests
-from services.prediction_service import calculate_home_win_probability
+# from services.prediction_service import calculate_home_win_probability
 
 ESPN_SCOREBOARD_URL = (
     "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
@@ -61,15 +61,10 @@ def format_game(event: dict) -> dict:
         "over_under": first_odds.get("overUnder", None),
 
         # Placeholder until actual model exists
-        "home_win_probability": calculate_home_win_probability(
-            home_score=home_score,
-            away_score=away_score,
-            period=period,
-            clock=clock
-        ),
-        "model_type": "xgboost",
-        "model_version": "v1"
-    }
+        "home_win_probability": None,
+        "model_type": None,
+        "model_version": None,
+            }
 
 
 def get_live_games() -> list[dict]:
