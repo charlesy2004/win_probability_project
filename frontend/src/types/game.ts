@@ -26,7 +26,10 @@ export type Game = {
   spread: string;
   over_under: number | null;
 
-  home_win_probability: number;
+  home_win_probability: number | null;
+  model_source?: string | null;
+  model_type?: string | null;
+  model_version?: string | null;
 };
 
 export type TimelinePoint = {
@@ -55,19 +58,28 @@ export type LivePlay = {
 
 export type GameStateDashboard = {
   game_id: string;
+
+  period: number | null;
+  clock: string | null;
+  status: string | null;
+
   home_team: string;
   away_team: string;
-  home_team_abbr: string;
-  away_team_abbr: string;
+  home_team_abbr?: string | null;
+  away_team_abbr?: string | null;
+
   home_score: number;
   away_score: number;
   score_diff: number;
-  period: number | null;
-  clock: string | null;
-  possession_team: string | null;
-  home_win_probability: number;
-  home_fouls: number | null;
-  away_fouls: number | null;
-  home_in_bonus: boolean;
-  away_in_bonus: boolean;
+
+  possession_team?: string | null;
+
+  home_win_probability: number | null;
+  away_win_probability?: number | null;
+  model_source?: string | null;
+
+  home_fouls?: number | null;
+  away_fouls?: number | null;
+  home_in_bonus?: boolean;
+  away_in_bonus?: boolean;
 };

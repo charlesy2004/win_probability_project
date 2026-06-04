@@ -15,11 +15,26 @@ type WinProbabilityChartProps = {
 };
 
 function WinProbabilityChart({ timeline }: WinProbabilityChartProps) {
-  const chartData = timeline.map((point, index) => ({
-    event_index: index + 1,
-    time: point.time,
-    probability_percent: point.home_win_probability * 100,
-  }));
+  const chartData = timeline
+    .filter(
+      (point) =>
+        typeof point.home_win_probability === "number" &&
+        !Number.isNaN(point.home_win_probability)
+    )
+    .map((point, index) => ({
+      event_index: index + 1,
+      time: point.time,
+      probability_percent: point.home_win_probability * 100,
+    }));
+
+  if (chartData.length === 0) {
+    return (
+      <section className="chart-card">
+        <h2>Win Probability Timeline</h2>
+        <p className="empty-state">No win probability timeline available yet.</p>
+      </section>
+    );
+  }
 
   return (
     <section className="chart-card">

@@ -8,6 +8,24 @@ ESPN_CORE_NBA_BASE_URL = (
     "https://sports.core.api.espn.com/v2/sports/basketball/leagues/nba"
 )
 
+def extract_team_id_from_ref(ref: str | None) -> str | None:
+    if not ref:
+        return None
+
+    if "/teams/" not in ref:
+        return None
+
+    return ref.split("/teams/")[-1].split("?")[0]
+
+
+def extract_play_team_id(play: dict) -> str | None:
+    team_ref = play.get("team", {}).get("$ref")
+    return extract_team_id_from_ref(team_ref)
+
+
+def extract_possession_team_id(play: dict) -> str | None:
+    possession_ref = play.get("possessionTeam", {}).get("$ref")
+    return extract_team_id_from_ref(possession_ref)
 
 def fetch_espn_scoreboard() -> dict:
     response = requests.get(ESPN_SCOREBOARD_URL, timeout=10)
@@ -37,12 +55,12 @@ def format_game(event: dict) -> dict:
         "name": event.get("name"),
         "short_name": event.get("shortName"),
         "date": event.get("date"),
-
+        "away_team_id": away["team"].get("id"),
         "away_team": away["team"]["displayName"],
         "away_team_abbr": away["team"]["abbreviation"],
         "away_score": int(away.get("score", 0)),
         "away_record": away.get("record", ""),
-
+        "home_team_id": home["team"].get("id"),
         "home_team": home["team"]["displayName"],
         "home_team_abbr": home["team"]["abbreviation"],
         "home_score": int(home.get("score", 0)),
@@ -127,6 +145,8 @@ def get_game_plays(game_id: str) -> list[dict]:
                 "text": play.get("text"),
                 "short_text": play.get("shortText"),
                 "type": play.get("type", {}).get("text"),
+                "team_id": extract_play_team_id(play),
+                "possession_team_id": extract_possession_team_id(play),
                 "home_score": home_score,
                 "away_score": away_score,
                 "scoring_play": play.get("scoringPlay"),
@@ -138,7 +158,7 @@ def get_game_plays(game_id: str) -> list[dict]:
         )
     cleaned_plays.sort(
         key=lambda play: int(play.get("sequence_number") or 0),
-        reverse=True,
+        reverse=True
     )
     return cleaned_plays
 

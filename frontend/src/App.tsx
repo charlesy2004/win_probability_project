@@ -74,15 +74,19 @@ function App() {
         <h1>Win Probability Dashboard</h1>
 
         <p className="subtitle">
-          Live game state and XGBoost-estimated home team win probability.
+          Live game state and neural-network-estimated home team win probability.
         </p>
 
-        <p className="model-badge">Model: XGBoost v1</p>
+        <p className="model-badge">Neural Network v1</p>
       </section>
 
       <section className="games-grid">
         {games.map((game) => (
-          <GameCard key={game.game_id} game={game} />
+          <GameCard
+            key={game.game_id}
+            game={game}
+            state={gameState?.game_id === game.game_id ? gameState : null}
+          />
         ))}
       </section>
 
