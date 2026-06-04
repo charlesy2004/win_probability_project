@@ -12,4 +12,4 @@ xgboost
 supabase
 redis
 pyarrow
-tensorflow
+tensorflow==2.17.1
