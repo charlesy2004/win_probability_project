@@ -35,7 +35,7 @@ function FoulsDisplay({
 }: {
   label?: string | null;
   fouls?: number | null;
-  inBonus?: boolean;
+  inBonus?: boolean | null;
 }) {
   return (
     <div className="state-metric">
@@ -62,14 +62,18 @@ function GameStateCard({ state }: GameStateCardProps) {
     ? `${(state.home_win_probability * 100).toFixed(1)}%`
     : "Unavailable";
 
+  const matchupAway = state.away_team_abbr ?? state.away_team ?? "--";
+  const matchupHome = state.home_team_abbr ?? state.home_team ?? "--";
+  const homeLabel = state.home_team_abbr ?? state.home_team ?? "Home";
+  const awayLabel = state.away_team_abbr ?? state.away_team ?? "Away";
+
   return (
     <section className="state-card">
       <div className="state-card-header">
         <h2>Game State Dashboard</h2>
 
         <p>
-          {state.away_team_abbr ?? state.away_team} @{" "}
-          {state.home_team_abbr ?? state.home_team}
+          {matchupAway} @ {matchupHome}
         </p>
 
         <p className="game-status">
@@ -98,20 +102,18 @@ function GameStateCard({ state }: GameStateCardProps) {
         </div>
 
         <div className="state-metric">
-          <p className="state-label">
-            {state.home_team_abbr ?? state.home_team} Win %
-          </p>
+          <p className="state-label">{homeLabel} Win %</p>
           <p className="state-value">{winPercent}</p>
         </div>
 
         <FoulsDisplay
-          label={state.home_team_abbr ?? state.home_team}
+          label={homeLabel}
           fouls={state.home_fouls}
           inBonus={state.home_in_bonus}
         />
 
         <FoulsDisplay
-          label={state.away_team_abbr ?? state.away_team}
+          label={awayLabel}
           fouls={state.away_fouls}
           inBonus={state.away_in_bonus}
         />
