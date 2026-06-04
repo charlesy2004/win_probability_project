@@ -54,13 +54,12 @@ function GameStateCard({ state }: GameStateCardProps) {
     return null;
   }
 
-  const hasWinProbability =
-    typeof state.home_win_probability === "number" &&
-    !Number.isNaN(state.home_win_probability);
+  const homeWinProbability = state.home_win_probability;
 
-  const winPercent = hasWinProbability
-    ? `${(state.home_win_probability * 100).toFixed(1)}%`
-    : "Unavailable";
+  const winPercent =
+    homeWinProbability === null || homeWinProbability === undefined
+      ? "Unavailable"
+      : `${(homeWinProbability * 100).toFixed(1)}%`;
 
   const matchupAway = state.away_team_abbr ?? state.away_team ?? "--";
   const matchupHome = state.home_team_abbr ?? state.home_team ?? "--";
